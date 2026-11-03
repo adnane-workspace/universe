@@ -39,3 +39,9 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+
+# API locale
+backend/data/
+
+# clé locale de l'éditeur
+.cursor/mcp.json
