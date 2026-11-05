@@ -78,8 +78,10 @@ export class Demonstration {
       new Seance('gl3-past-1', 'Réseaux', 'Salle E-220', Calendrier.decaler(maintenant, 2), '14:00', '16:00', 'GL3', 'teacher-rossi', true),
       ...Demonstration.seancesAVenir(maintenant),
       ...Demonstration.seancesGi4(maintenant),
+      ...Demonstration.seancesNabil(maintenant),
     );
     const absences = [
+      ...Demonstration.absencesNabil(maintenant),
       Absence.ouverte('abs-aminata-open', 'gl2-past-1', 'stu-aminata'),
       Absence.depuis('abs-aminata-ok', 'gl2-past-3', 'stu-aminata', 'justifiee', Calendrier.decaler(maintenant, 8), 'Convocation administrative.'),
       Absence.depuis('abs-aminata-old', 'gl2-past-6', 'stu-aminata', 'justifiee', Calendrier.decaler(maintenant, 16), 'Absence pour raison familiale.'),
@@ -213,6 +215,66 @@ export class Demonstration {
       '20:00',
       'en_attente',
     );
+  }
+
+  static lundiPrecedent(maintenant = new Date(), semaines = 1) {
+    const date = new Date(maintenant.getFullYear(), maintenant.getMonth(), maintenant.getDate());
+    const weekday = date.getDay();
+    const depuisLundi = weekday === 0 ? 6 : weekday - 1;
+    const retour = depuisLundi === 0 ? 7 : depuisLundi;
+    date.setDate(date.getDate() - retour - (semaines - 1) * 7);
+    return Calendrier.decaler(date, 0);
+  }
+
+  static seancesNabil(maintenant = new Date()) {
+    const cours = 'Génie logiciel et design patterns';
+    const salle = 'Salle A35';
+    const recent = Demonstration.lundiPrecedent(maintenant, 1);
+    const ancien = Demonstration.lundiPrecedent(maintenant, 2);
+    const seances = [
+      new Seance('nabil-past-a', cours, salle, recent, '14:30', '16:00', 'GI4A', 'teacher-elakkad', true),
+      new Seance('nabil-past-b', cours, salle, recent, '16:30', '18:00', 'GI4A', 'teacher-elakkad', true),
+      new Seance('nabil-past-c', cours, salle, ancien, '14:30', '16:00', 'GI4A', 'teacher-elakkad', true),
+    ];
+    if (maintenant.getDay() !== 1) {
+      const aujourdhui = Calendrier.decaler(maintenant, 0);
+      seances.unshift(
+        Seance.prevue('nabil-today-a', cours, salle, aujourdhui, '14:30', '16:00', 'GI4A', 'teacher-elakkad'),
+        Seance.prevue('nabil-today-b', cours, salle, aujourdhui, '16:30', '18:00', 'GI4A', 'teacher-elakkad'),
+      );
+    }
+    return seances;
+  }
+
+  static absencesNabil(maintenant = new Date()) {
+    const recent = Demonstration.lundiPrecedent(maintenant, 1);
+    const ancien = Demonstration.lundiPrecedent(maintenant, 2);
+    return [
+      Absence.ouverte('abs-nabil-adnane-open', 'nabil-past-a', 'gi4-22'),
+      Absence.ouverte('abs-nabil-basir-open', 'nabil-past-a', 'gi4-01'),
+      Absence.depuis('abs-nabil-bichri-sent', 'nabil-past-a', 'gi4-05', 'envoye', recent, 'Certificat médical pour une consultation.'),
+      Absence.depuis('abs-nabil-adnane-sent', 'nabil-past-b', 'gi4-22', 'envoye', recent, 'Rendez-vous à la scolarité, convocation jointe.'),
+      Absence.depuis('abs-nabil-yassine-sent', 'nabil-past-b', 'gi4-13', 'envoye', recent, 'Retard de transport, justificatif du train.'),
+      Absence.depuis('abs-nabil-aya-ok', 'nabil-past-b', 'gi4-07', 'justifiee', recent, 'Convocation à un concours.'),
+      Absence.depuis('abs-nabil-saad-ok', 'nabil-past-c', 'gi4-10', 'justifiee', ancien, 'Certificat médical de deux jours.'),
+      new Absence(
+        'abs-nabil-bichri-refused',
+        'nabil-past-c',
+        'gi4-05',
+        'refusee',
+        'Absence pour raison personnelle.',
+        ancien,
+        ancien,
+        'Le document est illisible. Merci d’en déposer un nouveau.',
+      ),
+    ];
+  }
+
+  static reservationsNabil(maintenant = new Date()) {
+    return [
+      new Reservation('res-nabil-attente', 'room-a35', 'teacher-elakkad', 'Soutenance des projets', Calendrier.decaler(maintenant, -1), '16:30', '18:00', 'en_attente'),
+      new Reservation('res-nabil-ok', 'room-f101', 'teacher-elakkad', 'Tutorat génie logiciel', Calendrier.decaler(maintenant, -2), '14:30', '16:00', 'validee'),
+    ];
   }
 
   static seancesAVenir(maintenant = new Date()) {

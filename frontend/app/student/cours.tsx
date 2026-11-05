@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { SectionTitle } from '@/components/AppHeader';
+import { JustificationForm } from '@/components/JustificationForm';
 import { RoleHeader } from '@/components/RoleHeader';
 import { AppBadge } from '@/components/ui/AppBadge';
 import { AppCard } from '@/components/ui/AppCard';
@@ -47,14 +48,18 @@ export default function StudentScheduleScreen() {
                 {lessons.map((lesson, index) => {
                   const missed = absences.find((item) => item.sessionId === lesson.id);
                   const state = lessonState(lesson.called, missed?.status);
+                  const canJustify = missed?.status === 'a_justifier' || missed?.status === 'refusee';
                   return (
-                    <View key={lesson.id} style={[styles.lesson, index > 0 && styles.rowBorder]}>
-                      <Text style={styles.time}>{lesson.start}</Text>
-                      <View style={styles.flex}>
-                        <Text style={styles.lessonTitle}>{lesson.course}</Text>
-                        <Text style={styles.meta}>{lesson.room}</Text>
+                    <View key={lesson.id} style={[styles.lessonBlock, index > 0 && styles.rowBorder]}>
+                      <View style={styles.lesson}>
+                        <Text style={styles.time}>{lesson.start}</Text>
+                        <View style={styles.flex}>
+                          <Text style={styles.lessonTitle}>{lesson.course}</Text>
+                          <Text style={styles.meta}>{lesson.room}</Text>
+                        </View>
+                        <AppBadge label={state.label} tone={state.tone} />
                       </View>
-                      <AppBadge label={state.label} tone={state.tone} />
+                      {canJustify && missed ? <JustificationForm absenceId={missed.id} again={missed.status === 'refusee'} /> : null}
                     </View>
                   );
                 })}
@@ -99,7 +104,8 @@ const styles = StyleSheet.create({
   day: { gap: spacing.sm },
   empty: { color: colors.textSecondary, fontSize: 14, lineHeight: 20 },
   listCard: { paddingVertical: spacing.xs, paddingHorizontal: spacing.md },
-  lesson: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.md },
+  lessonBlock: { gap: spacing.sm, paddingVertical: spacing.md },
+  lesson: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   rowBorder: { borderTopWidth: 1, borderTopColor: colors.border },
   time: { width: 52, color: colors.primary, fontSize: 14, fontWeight: '700' },
   flex: { flex: 1 },

@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 
 import { AppButton } from '@/components/ui/AppButton';
 import { AppInput } from '@/components/ui/AppInput';
-import { spacing } from '@/constants/theme';
+import { colors, spacing } from '@/constants/theme';
 import { useAttendance } from '@/context/attendance';
 
 export function JustificationForm({ absenceId, again = false }: { absenceId: string; again?: boolean }) {
@@ -27,6 +27,11 @@ export function JustificationForm({ absenceId, again = false }: { absenceId: str
 
   return (
     <View style={styles.form}>
+      <Text style={styles.lead}>
+        {again
+          ? 'L’enseignant a refusé le justificatif. Vous pouvez en déposer un autre.'
+          : 'L’enseignant a confirmé l’absence. Ajoutez votre justificatif.'}
+      </Text>
       <AppInput
         error={error}
         label="Motif"
@@ -51,5 +56,6 @@ export function JustificationForm({ absenceId, again = false }: { absenceId: str
 
 const styles = StyleSheet.create({
   form: { gap: spacing.sm },
+  lead: { color: colors.textSecondary, fontSize: 13, lineHeight: 18 },
   block: { alignSelf: 'stretch' },
 });

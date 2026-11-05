@@ -148,6 +148,12 @@ export class Registre {
     return this.copie({ sessions: [...this.sessions, ...ajouts] });
   }
 
+  avecAbsences(absences: Absence[]) {
+    const ajouts = absences.filter((absence) => !this.absences.some((item) => item.id === absence.id));
+    if (ajouts.length === 0) return this;
+    return this.copie({ absences: [...ajouts, ...this.absences] });
+  }
+
   private mapperAbsence(absenceId: string, update: (item: Absence) => Absence | null) {
     let changed = false;
     const absences = this.absences.map((item) => {

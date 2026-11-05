@@ -112,6 +112,7 @@ export class BaseDeDonnees {
     await this.completerMotifs();
     await this.assurerSeancesAVenir();
     await this.assurerGi4();
+    await this.assurerNabil();
     await this.assurerPersonnes();
     await this.assurerSalles();
     return this;
@@ -336,6 +337,15 @@ export class BaseDeDonnees {
     const [existant] = await this.connexion().select().from(schema.users).where(eq(schema.users.login, compte.login)).limit(1);
     if (existant) return;
     await this.enregistrerCompte(compte);
+  }
+
+  private async assurerNabil() {
+    const registre = await this.lireRegistre();
+    const suivant = registre.avecSeances(Demonstration.seancesNabil()).avecAbsences(Demonstration.absencesNabil());
+    if (suivant !== registre) await this.ecrireRegistre(suivant);
+    const parc = await this.lireParc();
+    const suivantParc = parc.avecReservations(Demonstration.reservationsNabil());
+    if (suivantParc !== parc) await this.ecrireParc(suivantParc);
   }
 
   private async assurerSeancesAVenir() {

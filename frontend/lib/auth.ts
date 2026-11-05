@@ -83,15 +83,6 @@ export const homeForRole: Record<Role, '/teacher' | '/student' | '/admin'> = {
   admin: '/admin',
 };
 
-export function accountsForSeed() {
-  return accounts.map((account) => ({ ...account }));
-}
-
-export function accountById(id: string): AuthUser | null {
-  const account = accounts.find((item) => item.id === id);
-  return account ? toUser(account) : null;
-}
-
 export function authenticate(login: string, password: string): AuthUser | null {
   const typedLogin = login.trim().toLowerCase();
   const typedPassword = password;

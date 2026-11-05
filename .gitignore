@@ -3,6 +3,9 @@
 # dependencies
 node_modules/
 
+# pas de lock à la racine (deps dans frontend/ et backend/)
+/pnpm-lock.yaml
+
 # Expo
 .expo/
 dist/

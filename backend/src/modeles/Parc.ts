@@ -20,6 +20,12 @@ export class Parc {
     this.reservations = reservations;
   }
 
+  avecReservations(reservations: Reservation[]) {
+    const ajouts = reservations.filter((reservation) => !this.reservations.some((item) => item.id === reservation.id));
+    if (ajouts.length === 0) return this;
+    return this.copie({ reservations: [...this.reservations, ...ajouts] });
+  }
+
   filtrerSalles(capaciteMin: number, equipement: string) {
     return this.rooms
       .filter((salle) => salle.correspond(capaciteMin, equipement))

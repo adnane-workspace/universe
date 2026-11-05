@@ -4,6 +4,7 @@
   "scripts": {
     "start": "corepack pnpm --dir frontend start",
     "server": "corepack pnpm --dir backend dev",
-    "test": "corepack pnpm --dir frontend test"
+    "test": "corepack pnpm --dir frontend test",
+    "typecheck": "corepack pnpm --dir frontend exec tsc --noEmit"
   }
 }

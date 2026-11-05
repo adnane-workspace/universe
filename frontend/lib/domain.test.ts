@@ -17,7 +17,7 @@ const now = new Date(2026, 10, 1, 9, 0, 0);
 
 test('un mauvais mot de passe est refusé', () => {
   assert.equal(authenticate('p.durand@univ-lumiere.fr', 'mauvais'), null);
-  assert.equal(authenticate('22104982', 'Etudiant2026')?.role, 'etudiant');
+  assert.equal(authenticate('a.elmenouar', 'Etudiant2026')?.role, 'etudiant');
 });
 
 test('un appel ne compte une absence qu’une seule fois', () => {

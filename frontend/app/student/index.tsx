@@ -2,6 +2,7 @@ import { Link, router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { SectionTitle } from '@/components/AppHeader';
+import { JustificationForm } from '@/components/JustificationForm';
 import { RoleHeader } from '@/components/RoleHeader';
 import { AppBadge } from '@/components/ui/AppBadge';
 import { AppCard } from '@/components/ui/AppCard';
@@ -46,23 +47,23 @@ export default function StudentHomeScreen() {
       {waiting.length > 0 ? (
         <View style={styles.block}>
           <SectionTitle>Absences à traiter</SectionTitle>
-          <AppCard style={styles.list}>
-            {waiting.map((item, index) => {
-              const session = data.sessions.find((entry) => entry.id === item.sessionId);
-              return (
-                <Link key={item.id} href={{ pathname: '/absence/[id]', params: { id: item.id } }} asChild>
-                  <Pressable accessibilityRole="link" style={StyleSheet.flatten([styles.row, index > 0 ? styles.rowBorder : null])}>
+          {waiting.map((item) => {
+            const session = data.sessions.find((entry) => entry.id === item.sessionId);
+            return (
+              <AppCard key={item.id} style={styles.justify}>
+                <Link href={{ pathname: '/absence/[id]', params: { id: item.id } }} asChild>
+                  <Pressable accessibilityRole="link" style={styles.row}>
                     <View style={styles.flex}>
                       <Text style={styles.course}>{session?.course ?? 'Absence'}</Text>
-                      <Text style={styles.meta}>{item.status === 'refusee' ? 'Renvoyer le motif' : 'Déposer le motif'}</Text>
+                      <Text style={styles.meta}>{session ? `${session.date} · ${session.start}` : 'Absence confirmée'}</Text>
                     </View>
                     <AppBadge label={statusLabel(item.status)} tone={tones[item.status]} />
-                    <Text accessibilityElementsHidden importantForAccessibility="no" style={styles.chevron}>›</Text>
                   </Pressable>
                 </Link>
-              );
-            })}
-          </AppCard>
+                <JustificationForm absenceId={item.id} again={item.status === 'refusee'} />
+              </AppCard>
+            );
+          })}
         </View>
       ) : null}
 
@@ -118,6 +119,7 @@ const styles = StyleSheet.create({
   stat: { flex: 1 },
   block: { gap: spacing.sm },
   list: { paddingVertical: spacing.xs, paddingHorizontal: spacing.md },
+  justify: { gap: spacing.sm },
   row: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.md },
   rowBorder: { borderTopWidth: 1, borderTopColor: colors.border },
   time: { width: 48, color: colors.primary, fontSize: 14, fontWeight: '800' },

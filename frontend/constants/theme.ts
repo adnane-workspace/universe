@@ -1,9 +1,9 @@
 import type { TextStyle, ViewStyle } from 'react-native';
 
 export const colors = {
-  primary: '#2563EB',
-  primaryDark: '#1D4ED8',
-  primaryLight: '#EFF6FF',
+  primary: '#800020',
+  primaryDark: '#5C0017',
+  primaryLight: '#F8E8EE',
   background: '#F8FAFC',
   surface: '#FFFFFF',
   text: '#0F172A',
