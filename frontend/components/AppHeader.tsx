@@ -3,7 +3,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { SignOutButton } from '@/components/SignOutButton';
 import { AppAvatar } from '@/components/ui/AppAvatar';
-import { colors, radius, spacing, type } from '@/constants/theme';
+import { colors, spacing, type } from '@/constants/theme';
 
 export function AppHeader({
   eyebrow,
@@ -17,20 +17,14 @@ export function AppHeader({
   initials: string;
 }) {
   return (
-    <View style={styles.wrap}>
-      <View style={styles.top}>
-        <View style={styles.pill}>
-          <Text style={styles.eyebrow}>{eyebrow}</Text>
-        </View>
-        <SignOutButton />
+    <View style={styles.identity}>
+      <View style={styles.copy}>
+        {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
+        {title ? <Text style={styles.title}>{title}</Text> : null}
+        {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
       </View>
-      <View style={styles.identity}>
-        <AppAvatar initials={initials} size={44} />
-        <View style={styles.copy}>
-          <Text style={styles.title}>{title}</Text>
-          {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
-        </View>
-      </View>
+      <AppAvatar initials={initials} size={48} />
+      <SignOutButton />
     </View>
   );
 }
@@ -45,17 +39,9 @@ export function SectionTitle({ children, action }: { children: string; action?: 
 }
 
 const styles = StyleSheet.create({
-  wrap: { gap: spacing.md },
-  top: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  pill: {
-    backgroundColor: colors.primaryLight,
-    borderRadius: radius.full,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-  },
-  identity: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  identity: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   copy: { flex: 1, gap: 2 },
-  eyebrow: { color: colors.primary, fontSize: 12, lineHeight: 16, fontWeight: '600', letterSpacing: 0.4 },
+  eyebrow: { color: colors.primary, fontSize: 13, lineHeight: 18, fontWeight: '700' },
   title: type.title,
   subtitle: type.secondary,
   section: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.sm },

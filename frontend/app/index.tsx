@@ -67,11 +67,15 @@ export default function LoginScreen() {
         contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 28 }]}
         keyboardShouldPersistTaps="handled"
       >
+        <View style={styles.mark}>
+          <Icon name={{ ios: 'graduationcap.fill', android: 'school' }} color={colors.primary} size={34} />
+        </View>
         <Text style={styles.brand}>UniPresence</Text>
         <Text style={styles.title}>Connexion</Text>
 
         <Text style={styles.label}>Identifiant</Text>
         <View style={[styles.field, focused === 'identifier' && styles.fieldOn]}>
+          <Icon name={{ ios: 'envelope', android: 'mail' }} color={colors.textSecondary} size={18} />
           <TextInput
             autoCapitalize="none"
             autoCorrect={false}
@@ -89,6 +93,7 @@ export default function LoginScreen() {
 
         <Text style={styles.label}>Mot de passe</Text>
         <View style={[styles.field, focused === 'password' && styles.fieldOn]}>
+          <Icon name={{ ios: 'lock', android: 'lock' }} color={colors.textSecondary} size={18} />
           <TextInput
             autoCapitalize="none"
             autoCorrect={false}
@@ -156,8 +161,18 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     paddingHorizontal: spacing.lg,
   },
-  brand: { marginTop: spacing.lg, textAlign: 'center', color: colors.textSecondary, fontSize: 13, lineHeight: 18, fontWeight: '700', letterSpacing: 0.6, textTransform: 'uppercase' },
-  title: { marginTop: spacing.sm, marginBottom: spacing.xl, textAlign: 'center', color: colors.text, fontSize: 32, lineHeight: 38, fontWeight: '700', letterSpacing: -0.5 },
+  mark: {
+    width: 84,
+    height: 84,
+    borderRadius: 42,
+    alignSelf: 'center',
+    marginTop: spacing.lg,
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  brand: { marginTop: spacing.md, textAlign: 'center', color: colors.primary, fontSize: 28, lineHeight: 34, fontWeight: '800', letterSpacing: -0.4 },
+  title: { marginTop: spacing.xs, marginBottom: spacing.xl, textAlign: 'center', color: colors.text, fontSize: 22, lineHeight: 28, fontWeight: '700' },
   label: { color: colors.text, fontSize: 14, fontWeight: '600', marginBottom: spacing.sm },
   field: {
     minHeight: 52,
@@ -168,6 +183,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     flexDirection: 'row',
     alignItems: 'center',
+    gap: spacing.sm,
     paddingHorizontal: spacing.md,
     marginBottom: spacing.md,
   },
@@ -178,7 +194,7 @@ const styles = StyleSheet.create({
   error: { color: colors.error, fontSize: 13, lineHeight: 18, marginTop: -8, marginBottom: spacing.md },
   login: {
     minHeight: 54,
-    borderRadius: radius.md,
+    borderRadius: radius.full,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',

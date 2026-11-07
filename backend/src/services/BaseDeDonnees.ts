@@ -11,10 +11,7 @@ import { Demonstration } from '../modeles/Demonstration.ts';
 import { Enseignant } from '../modeles/Enseignant.ts';
 import { Etudiant } from '../modeles/Etudiant.ts';
 import { Groupe } from '../modeles/Groupe.ts';
-import { Parc } from '../modeles/Parc.ts';
 import { Registre } from '../modeles/Registre.ts';
-import { Reservation, type StatutReservation } from '../modeles/Reservation.ts';
-import { Salle } from '../modeles/Salle.ts';
 import { Seance } from '../modeles/Seance.ts';
 import { Compte, type Role } from '../modeles/Utilisateur.ts';
 import { MotDePasse } from './MotDePasse.ts';
@@ -73,22 +70,6 @@ CREATE TABLE IF NOT EXISTS absences (
   reviewed_at TEXT,
   comment TEXT
 );
-CREATE TABLE IF NOT EXISTS rooms (
-  id TEXT PRIMARY KEY,
-  name TEXT NOT NULL,
-  capacity INTEGER NOT NULL,
-  equipment TEXT NOT NULL
-);
-CREATE TABLE IF NOT EXISTS reservations (
-  id TEXT PRIMARY KEY,
-  room_id TEXT NOT NULL,
-  teacher_id TEXT NOT NULL,
-  subject TEXT NOT NULL,
-  date TEXT NOT NULL,
-  start_time TEXT NOT NULL,
-  end_time TEXT NOT NULL,
-  status TEXT NOT NULL
-);
 `;
 
 type Database = LibSQLDatabase<typeof schema>;
@@ -114,7 +95,8 @@ export class BaseDeDonnees {
     await this.assurerGi4();
     await this.assurerNabil();
     await this.assurerPersonnes();
-    await this.assurerSalles();
+    await this.client.execute('DROP TABLE IF EXISTS reservations');
+    await this.client.execute('DROP TABLE IF EXISTS rooms');
     return this;
   }
 
@@ -273,41 +255,6 @@ export class BaseDeDonnees {
     }
   }
 
-  async lireParc() {
-    const db = this.connexion();
-    const [salles, reservations] = await Promise.all([
-      db.select().from(schema.rooms),
-      db.select().from(schema.reservations),
-    ]);
-    return new Parc(
-      salles.map((item) => new Salle(item.id, item.name, item.capacity, item.equipment)),
-      reservations.map((item) => new Reservation(item.id, item.roomId, item.teacherId, item.subject, item.date, item.start, item.end, item.status as StatutReservation)),
-    );
-  }
-
-  async ecrireParc(parc: Parc) {
-    const db = this.connexion();
-    await db.transaction(async (tx) => {
-      await tx.delete(schema.reservations);
-      await tx.delete(schema.rooms);
-      if (parc.rooms.length > 0) {
-        await tx.insert(schema.rooms).values(parc.rooms.map((item) => ({ id: item.id, name: item.name, capacity: item.capacity, equipment: item.equipment })));
-      }
-      if (parc.reservations.length > 0) {
-        await tx.insert(schema.reservations).values(parc.reservations.map((item) => ({
-          id: item.id,
-          roomId: item.roomId,
-          teacherId: item.teacherId,
-          subject: item.subject,
-          date: item.date,
-          start: item.start,
-          end: item.end,
-          status: item.status,
-        })));
-      }
-    });
-  }
-
   private async assurerPersonnes() {
     const db = this.connexion();
     await db.update(schema.students).set({ name: 'Adnane El Menouar', initials: 'AE' }).where(eq(schema.students.id, 'gi4-22'));
@@ -316,12 +263,6 @@ export class BaseDeDonnees {
     if (!compte) return;
     const [existant] = await db.select().from(schema.users).where(eq(schema.users.id, compte.id)).limit(1);
     if (!existant) await this.enregistrerCompte(compte);
-  }
-
-  private async assurerSalles() {
-    const parc = await this.lireParc();
-    if (parc.rooms.length > 0) return;
-    await this.ecrireParc(new Parc(Demonstration.salles(), [Demonstration.reservationExemple()]));
   }
 
   private async assurerGi4() {
@@ -343,9 +284,6 @@ export class BaseDeDonnees {
     const registre = await this.lireRegistre();
     const suivant = registre.avecSeances(Demonstration.seancesNabil()).avecAbsences(Demonstration.absencesNabil());
     if (suivant !== registre) await this.ecrireRegistre(suivant);
-    const parc = await this.lireParc();
-    const suivantParc = parc.avecReservations(Demonstration.reservationsNabil());
-    if (suivantParc !== parc) await this.ecrireParc(suivantParc);
   }
 
   private async assurerSeancesAVenir() {

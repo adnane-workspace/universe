@@ -1,7 +1,7 @@
 import cors from 'cors';
 import express, { type Request, type Response } from 'express';
 
-import type { StatutReservation } from '../modeles/Reservation.ts';
+import { Absence } from '../modeles/Absence.ts';
 import { AuthService } from '../services/AuthService.ts';
 import { BaseDeDonnees } from '../services/BaseDeDonnees.ts';
 
@@ -33,15 +33,6 @@ export class Application {
     app.post('/attendance/sessions/cancel', (req, res) => this.annulation(req, res));
     app.post('/attendance/students', (req, res) => this.etudiant(req, res));
     app.post('/attendance/teachers', (req, res) => this.enseignant(req, res));
-    app.get('/rooms', (req, res) => this.salles(req, res));
-    app.post('/rooms', (req, res) => this.creerSalle(req, res));
-    app.post('/rooms/update', (req, res) => this.modifierSalle(req, res));
-    app.post('/rooms/delete', (req, res) => this.supprimerSalle(req, res));
-    app.get('/reservations', (req, res) => this.reservations(req, res));
-    app.post('/reservations', (req, res) => this.reserver(req, res));
-    app.post('/reservations/update', (req, res) => this.modifierReservation(req, res));
-    app.post('/reservations/cancel', (req, res) => this.annulerReservation(req, res));
-    app.post('/reservations/decision', (req, res) => this.trancherReservation(req, res));
     return app;
   }
 
@@ -110,11 +101,17 @@ export class Application {
       res.status(403).json({ message: 'Ce justificatif ne vous concerne pas.' });
       return;
     }
+    const seance = registre.seanceParId(absence.sessionId);
     const suivant = registre.deposerJustificatif(absenceId, motif);
     if (suivant === registre) {
       const peutDeposer = absence.status === 'a_justifier' || absence.status === 'refusee';
+      const horsDelai = Boolean(seance && peutDeposer && !Absence.dansLeDelai(seance.date, new Date()));
       res.status(peutDeposer ? 400 : 409).json({
-        message: peutDeposer ? 'Décrivez le motif en au moins quelques mots.' : 'Ce justificatif ne peut plus être déposé.',
+        message: horsDelai
+          ? 'Le délai de 7 jours après la séance est dépassé.'
+          : peutDeposer
+            ? 'Choisissez un type de motif et décrivez-le suffisamment.'
+            : 'Ce justificatif ne peut plus être déposé.',
       });
       return;
     }
@@ -288,169 +285,8 @@ export class Application {
     res.json({ data: resultat.registre });
   }
 
-  private async salles(req: Request, res: Response) {
-    const utilisateur = await this.personnel(req, res);
-    if (!utilisateur) return;
-    const capacite = Number(req.query.capacity ?? 0);
-    const equipement = typeof req.query.equipment === 'string' ? req.query.equipment : '';
-    const parc = await this.base.lireParc();
-    res.json({ rooms: parc.filtrerSalles(Number.isFinite(capacite) ? capacite : 0, equipement) });
-  }
-
-  private async creerSalle(req: Request, res: Response) {
-    const utilisateur = await this.personnel(req, res);
-    if (!utilisateur) return;
-    if (!utilisateur.admin) {
-      res.status(403).json({ message: 'Seul l’administrateur peut ajouter une salle.' });
-      return;
-    }
-    const parc = await this.base.lireParc();
-    const resultat = parc.ajouterSalle(this.texte(req.body?.name), this.entier(req.body?.capacity), this.texte(req.body?.equipment));
-    if (resultat.erreur) {
-      res.status(400).json({ message: resultat.erreur });
-      return;
-    }
-    await this.base.ecrireParc(resultat.parc);
-    res.json({ rooms: resultat.parc.rooms });
-  }
-
-  private async modifierSalle(req: Request, res: Response) {
-    const utilisateur = await this.personnel(req, res);
-    if (!utilisateur) return;
-    if (!utilisateur.admin) {
-      res.status(403).json({ message: 'Seul l’administrateur peut modifier une salle.' });
-      return;
-    }
-    const parc = await this.base.lireParc();
-    const resultat = parc.modifierSalle(this.texte(req.body?.id), this.texte(req.body?.name), this.entier(req.body?.capacity), this.texte(req.body?.equipment));
-    if (resultat.erreur) {
-      res.status(400).json({ message: resultat.erreur });
-      return;
-    }
-    await this.base.ecrireParc(resultat.parc);
-    res.json({ rooms: resultat.parc.rooms });
-  }
-
-  private async supprimerSalle(req: Request, res: Response) {
-    const utilisateur = await this.personnel(req, res);
-    if (!utilisateur) return;
-    if (!utilisateur.admin) {
-      res.status(403).json({ message: 'Seul l’administrateur peut supprimer une salle.' });
-      return;
-    }
-    const parc = await this.base.lireParc();
-    const resultat = parc.supprimerSalle(this.texte(req.body?.id));
-    if (resultat.erreur) {
-      res.status(400).json({ message: resultat.erreur });
-      return;
-    }
-    await this.base.ecrireParc(resultat.parc);
-    res.json({ rooms: resultat.parc.rooms });
-  }
-
-  private async reservations(req: Request, res: Response) {
-    const utilisateur = await this.personnel(req, res);
-    if (!utilisateur) return;
-    const roomId = typeof req.query.roomId === 'string' ? req.query.roomId : '';
-    const subject = typeof req.query.subject === 'string' ? req.query.subject : '';
-    const parc = await this.base.lireParc();
-    res.json({ reservations: parc.filtrerReservations(roomId, subject), rooms: parc.rooms });
-  }
-
-  private async reserver(req: Request, res: Response) {
-    const utilisateur = await this.personnel(req, res);
-    if (!utilisateur) return;
-    if (utilisateur.role !== 'enseignant' || !utilisateur.teacherId) {
-      res.status(403).json({ message: 'Seul un enseignant peut réserver une salle.' });
-      return;
-    }
-    const parc = await this.base.lireParc();
-    const resultat = parc.reserver({
-      roomId: this.texte(req.body?.roomId),
-      teacherId: utilisateur.teacherId,
-      subject: this.texte(req.body?.subject),
-      date: this.texte(req.body?.date),
-      start: this.texte(req.body?.start),
-      end: this.texte(req.body?.end),
-    });
-    if (resultat.erreur) {
-      res.status(400).json({ message: resultat.erreur });
-      return;
-    }
-    await this.base.ecrireParc(resultat.parc);
-    res.json({ reservations: resultat.parc.reservations });
-  }
-
-  private async modifierReservation(req: Request, res: Response) {
-    const utilisateur = await this.personnel(req, res);
-    if (!utilisateur) return;
-    const parc = await this.base.lireParc();
-    const resultat = parc.modifierReservation(this.texte(req.body?.id), utilisateur.teacherId ?? '', utilisateur.admin, {
-      roomId: this.texte(req.body?.roomId),
-      subject: this.texte(req.body?.subject),
-      date: this.texte(req.body?.date),
-      start: this.texte(req.body?.start),
-      end: this.texte(req.body?.end),
-    });
-    if (resultat.erreur) {
-      res.status(400).json({ message: resultat.erreur });
-      return;
-    }
-    await this.base.ecrireParc(resultat.parc);
-    res.json({ reservations: resultat.parc.reservations });
-  }
-
-  private async annulerReservation(req: Request, res: Response) {
-    const utilisateur = await this.personnel(req, res);
-    if (!utilisateur) return;
-    const parc = await this.base.lireParc();
-    const resultat = parc.annuler(this.texte(req.body?.id), utilisateur.teacherId ?? '', utilisateur.admin);
-    if (resultat.erreur) {
-      res.status(400).json({ message: resultat.erreur });
-      return;
-    }
-    await this.base.ecrireParc(resultat.parc);
-    res.json({ reservations: resultat.parc.reservations });
-  }
-
-  private async trancherReservation(req: Request, res: Response) {
-    const utilisateur = await this.personnel(req, res);
-    if (!utilisateur) return;
-    if (!utilisateur.admin) {
-      res.status(403).json({ message: 'Seul l’administrateur peut confirmer ou refuser une demande de salle.' });
-      return;
-    }
-    const decision = this.texte(req.body?.decision) as StatutReservation;
-    const parc = await this.base.lireParc();
-    const resultat = parc.trancher(this.texte(req.body?.id), decision);
-    if (resultat.erreur) {
-      res.status(400).json({ message: resultat.erreur });
-      return;
-    }
-    await this.base.ecrireParc(resultat.parc);
-    res.json({ reservations: resultat.parc.reservations });
-  }
-
-  private async personnel(req: Request, res: Response) {
-    const utilisateur = await this.auth.courant(this.jeton(req));
-    if (!utilisateur) {
-      this.refus(res);
-      return null;
-    }
-    if (utilisateur.role === 'etudiant') {
-      res.status(403).json({ message: 'Les salles sont réservées au personnel.' });
-      return null;
-    }
-    return utilisateur;
-  }
-
   private texte(valeur: unknown) {
     return typeof valeur === 'string' ? valeur : '';
-  }
-
-  private entier(valeur: unknown) {
-    const nombre = typeof valeur === 'number' ? valeur : Number(valeur);
-    return Number.isFinite(nombre) ? Math.trunc(nombre) : 0;
   }
 
   private refus(res: Response) {

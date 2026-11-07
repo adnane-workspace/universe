@@ -3,8 +3,10 @@ import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
 import { Platform, StyleSheet, View } from 'react-native';
-import { useReducedMotion } from 'react-native-reanimated';
+/* eslint-disable import/no-duplicates -- Reanimated : effet de bord d’init + hooks */
 import 'react-native-reanimated';
+import { useReducedMotion } from 'react-native-reanimated';
+/* eslint-enable import/no-duplicates */
 
 import { useColorScheme } from '@/components/useColorScheme';
 import { AppButton } from '@/components/ui/AppButton';

@@ -2,7 +2,7 @@ import { router } from 'expo-router';
 import { Pressable, StyleSheet } from 'react-native';
 
 import { Icon } from '@/components/Icon';
-import { colors, radius } from '@/constants/theme';
+import { colors } from '@/constants/theme';
 import { useSession } from '@/context/session';
 
 export function SignOutButton() {
@@ -26,15 +26,10 @@ export function SignOutButton() {
 
 const styles = StyleSheet.create({
   button: {
-    width: 44,
-    height: 44,
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.background,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    borderCurve: 'continuous',
   },
-  pressed: { backgroundColor: colors.primaryLight },
+  pressed: { opacity: 0.6 },
 });

@@ -5,6 +5,7 @@
     "start": "corepack pnpm --dir frontend start",
     "server": "corepack pnpm --dir backend dev",
     "test": "corepack pnpm --dir frontend test",
-    "typecheck": "corepack pnpm --dir frontend exec tsc --noEmit"
+    "typecheck": "corepack pnpm --dir frontend exec tsc --noEmit",
+    "lint": "corepack pnpm --dir frontend exec expo lint"
   }
 }

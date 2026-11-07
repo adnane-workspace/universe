@@ -10,17 +10,24 @@ export function Screen({
   children,
   header,
   footer,
+  floating,
   keyboard = false,
   inTabs = false,
 }: {
   children: ReactNode;
   header?: ReactNode;
   footer?: ReactNode;
+  floating?: ReactNode;
   keyboard?: boolean;
   inTabs?: boolean;
 }) {
   const insets = useSafeAreaInsets();
   const reduced = useReducedMotion() === true;
+  // Sur iOS, la barre native flotte par-dessus l'écran. Le pied de page doit rester au-dessus.
+  const tabClearance = inTabs && Platform.OS === 'ios' ? 56 + insets.bottom : 0;
+  const scrollBottom = footer
+    ? spacing.lg
+    : (inTabs ? tabClearance + spacing.xl : insets.bottom + spacing.lg) + (floating ? 72 : 0);
 
   return (
     <KeyboardAvoidingView style={[styles.page, styles.clip]} behavior={Platform.OS === 'ios' ? 'padding' : undefined} enabled={keyboard}>
@@ -35,7 +42,7 @@ export function Screen({
         contentContainerStyle={[
           styles.frame,
           styles.content,
-          { paddingTop: header ? spacing.lg : insets.top + spacing.lg, paddingBottom: inTabs ? spacing.xl : insets.bottom + spacing.lg },
+          { paddingTop: header ? spacing.lg : insets.top + spacing.lg, paddingBottom: scrollBottom },
         ]}
         keyboardShouldPersistTaps="handled"
       >
@@ -44,8 +51,15 @@ export function Screen({
         </Animated.View>
       </ScrollView>
       {footer ? (
-        <View style={[styles.footer, { paddingBottom: inTabs ? spacing.sm : Math.max(insets.bottom, spacing.sm) }]}>
+        <View style={[styles.footer, { paddingBottom: inTabs ? tabClearance + spacing.sm : Math.max(insets.bottom, spacing.sm) }]}>
           <View style={styles.frame}>{footer}</View>
+        </View>
+      ) : null}
+      {floating ? (
+        <View pointerEvents="box-none" style={[styles.floatingLayer, { bottom: tabClearance + spacing.md }]}>
+          <View pointerEvents="box-none" style={styles.frame}>
+            <View pointerEvents="box-none" style={styles.floating}>{floating}</View>
+          </View>
         </View>
       ) : null}
     </KeyboardAvoidingView>
@@ -56,10 +70,8 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.background },
   clip: { overflow: 'hidden' },
   header: {
-    backgroundColor: colors.surface,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border,
-    paddingBottom: spacing.md,
+    backgroundColor: colors.background,
+    paddingBottom: spacing.sm,
     zIndex: 2,
   },
   frame: {
@@ -76,4 +88,6 @@ const styles = StyleSheet.create({
     borderTopColor: colors.border,
     paddingTop: spacing.sm,
   },
+  floatingLayer: { position: 'absolute', left: 0, right: 0, zIndex: 3 },
+  floating: { alignSelf: 'flex-end' },
 });

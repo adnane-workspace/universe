@@ -6,11 +6,12 @@ import { JustificationForm } from '@/components/JustificationForm';
 import { RoleHeader } from '@/components/RoleHeader';
 import { AppBadge } from '@/components/ui/AppBadge';
 import { AppCard } from '@/components/ui/AppCard';
+import { CourseMark } from '@/components/ui/CourseMark';
 import { Screen } from '@/components/ui/Screen';
 import { colors, radius, spacing } from '@/constants/theme';
 import { useAttendance } from '@/context/attendance';
 import { useSession } from '@/context/session';
-import { formatWeek, sessionsForGroupOn, studentAbsences, studentById, weekDays, weekdayLabel, type AbsenceStatus } from '@/lib/domain';
+import { canJustify, formatWeek, sessionsForGroupOn, studentAbsences, studentById, weekDays, weekdayLabel, type AbsenceStatus } from '@/lib/domain';
 
 export default function StudentScheduleScreen() {
   const { user } = useSession();
@@ -44,26 +45,24 @@ export default function StudentScheduleScreen() {
             {lessons.length === 0 ? (
               <Text style={styles.empty}>Aucun cours</Text>
             ) : (
-              <AppCard style={styles.listCard}>
-                {lessons.map((lesson, index) => {
-                  const missed = absences.find((item) => item.sessionId === lesson.id);
-                  const state = lessonState(lesson.called, missed?.status);
-                  const canJustify = missed?.status === 'a_justifier' || missed?.status === 'refusee';
-                  return (
-                    <View key={lesson.id} style={[styles.lessonBlock, index > 0 && styles.rowBorder]}>
-                      <View style={styles.lesson}>
-                        <Text style={styles.time}>{lesson.start}</Text>
-                        <View style={styles.flex}>
-                          <Text style={styles.lessonTitle}>{lesson.course}</Text>
-                          <Text style={styles.meta}>{lesson.room}</Text>
-                        </View>
-                        <AppBadge label={state.label} tone={state.tone} />
+              lessons.map((lesson) => {
+                const missed = absences.find((item) => item.sessionId === lesson.id);
+                  const state = lessonState(lesson.called, missed?.status, lesson.date);
+                const open = missed ? canJustify(missed.status, lesson.date) : false;
+                return (
+                  <AppCard key={lesson.id} style={styles.lessonBlock}>
+                    <View style={styles.lesson}>
+                      <CourseMark course={lesson.course} />
+                      <View style={styles.flex}>
+                        <Text style={styles.lessonTitle}>{lesson.course}</Text>
+                        <Text style={styles.meta}>{lesson.start}–{lesson.end} · {lesson.room}</Text>
                       </View>
-                      {canJustify && missed ? <JustificationForm absenceId={missed.id} again={missed.status === 'refusee'} /> : null}
+                      <AppBadge label={state.label} tone={state.tone} />
                     </View>
-                  );
-                })}
-              </AppCard>
+                    {open && missed ? <JustificationForm absenceId={missed.id} again={missed.status === 'refusee'} /> : null}
+                  </AppCard>
+                );
+              })
             )}
           </View>
         );
@@ -72,12 +71,13 @@ export default function StudentScheduleScreen() {
   );
 }
 
-function lessonState(called: boolean, status?: AbsenceStatus) {
+function lessonState(called: boolean, status: AbsenceStatus | undefined, sessionDate: string) {
   if (!called) return { label: 'À venir', tone: 'neutral' as const };
   if (!status) return { label: 'Présent', tone: 'success' as const };
   if (status === 'justifiee') return { label: 'Justifiée', tone: 'success' as const };
   if (status === 'refusee') return { label: 'Refusée', tone: 'danger' as const };
-  if (status === 'envoye') return { label: 'Envoyé', tone: 'neutral' as const };
+  if (status === 'envoye') return { label: 'En examen', tone: 'neutral' as const };
+  if (!canJustify(status, sessionDate)) return { label: 'Hors délai', tone: 'danger' as const };
   return { label: 'À justifier', tone: 'warning' as const };
 }
 
@@ -103,11 +103,8 @@ const styles = StyleSheet.create({
   weekText: { color: colors.text, fontSize: 15, lineHeight: 20, fontWeight: '700', textAlign: 'center' },
   day: { gap: spacing.sm },
   empty: { color: colors.textSecondary, fontSize: 14, lineHeight: 20 },
-  listCard: { paddingVertical: spacing.xs, paddingHorizontal: spacing.md },
-  lessonBlock: { gap: spacing.sm, paddingVertical: spacing.md },
+  lessonBlock: { gap: spacing.sm },
   lesson: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  rowBorder: { borderTopWidth: 1, borderTopColor: colors.border },
-  time: { width: 52, color: colors.primary, fontSize: 14, fontWeight: '700' },
   flex: { flex: 1 },
   lessonTitle: { color: colors.text, fontSize: 15, fontWeight: '700' },
   meta: { color: colors.textSecondary, fontSize: 13, marginTop: 2 },

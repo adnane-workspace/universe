@@ -14,7 +14,7 @@ export default function AdminRatesScreen() {
   const highest = [...groups].sort((left, right) => right.rate - left.rate)[0];
 
   return (
-    <Screen inTabs header={<RoleHeader eyebrow="Taux" subtitle="Absences sur les séances appelées" />}>
+    <Screen inTabs header={<RoleHeader eyebrow="Taux" subtitle="Absences non justifiées sur les séances appelées" />}>
       <View style={styles.stack}>
         <SectionTitle>Par groupe</SectionTitle>
         <AppCard style={styles.stack}>

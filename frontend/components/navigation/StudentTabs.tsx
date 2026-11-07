@@ -4,13 +4,16 @@ import { useRoleGuard } from '@/components/navigation/useRoleGuard';
 import { colors } from '@/constants/theme';
 import { useAttendance } from '@/context/attendance';
 import { useSession } from '@/context/session';
-import { studentAbsences } from '@/lib/domain';
+import { canJustify, studentAbsences } from '@/lib/domain';
 
 export default function StudentTabs() {
   const allowed = useRoleGuard('etudiant');
   const { user } = useSession();
   const { data } = useAttendance();
-  const pending = studentAbsences(data, user?.studentId ?? '').filter((item) => item.status === 'a_justifier').length;
+  const pending = studentAbsences(data, user?.studentId ?? '').filter((item) => {
+    const session = data.sessions.find((entry) => entry.id === item.sessionId);
+    return session ? canJustify(item.status, session.date) : false;
+  }).length;
 
   if (!allowed) {
     return null;

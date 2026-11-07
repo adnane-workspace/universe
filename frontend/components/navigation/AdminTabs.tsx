@@ -28,10 +28,6 @@ export default function AdminTabs() {
         <NativeTabs.Trigger.Icon sf="calendar.badge.plus" md="edit_calendar" />
         <NativeTabs.Trigger.Label>Séances</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="salles" disableTransparentOnScrollEdge>
-        <NativeTabs.Trigger.Icon sf={{ default: 'door.left.hand.closed', selected: 'door.left.hand.open' }} md="meeting_room" />
-        <NativeTabs.Trigger.Label>Salles</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="ajouter" disableTransparentOnScrollEdge>
         <NativeTabs.Trigger.Icon sf="person.badge.plus" md="person_add" />
         <NativeTabs.Trigger.Label>Ajouter</NativeTabs.Trigger.Label>

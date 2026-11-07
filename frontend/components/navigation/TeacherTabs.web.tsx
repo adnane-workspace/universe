@@ -35,13 +35,6 @@ export default function TeacherTabs() {
         }}
       />
       <Tabs.Screen
-        name="salles"
-        options={{
-          title: 'Salles',
-          tabBarIcon: ({ color, focused }) => <TabIcon color={color} focused={focused} name={{ ios: 'door.left.hand.closed', android: 'meeting_room' }} />,
-        }}
-      />
-      <Tabs.Screen
         name="justificatifs"
         options={{
           title: 'Justificatifs',

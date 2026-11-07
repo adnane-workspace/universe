@@ -48,24 +48,6 @@ export const courseSessions = sqliteTable('course_sessions', {
   called: integer('called', { mode: 'boolean' }).notNull(),
 });
 
-export const rooms = sqliteTable('rooms', {
-  id: text('id').primaryKey(),
-  name: text('name').notNull(),
-  capacity: integer('capacity').notNull(),
-  equipment: text('equipment').notNull(),
-});
-
-export const reservations = sqliteTable('reservations', {
-  id: text('id').primaryKey(),
-  roomId: text('room_id').notNull(),
-  teacherId: text('teacher_id').notNull(),
-  subject: text('subject').notNull(),
-  date: text('date').notNull(),
-  start: text('start_time').notNull(),
-  end: text('end_time').notNull(),
-  status: text('status').notNull(),
-});
-
 export const absences = sqliteTable('absences', {
   id: text('id').primaryKey(),
   sessionId: text('session_id').notNull(),

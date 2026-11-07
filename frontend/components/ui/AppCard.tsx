@@ -10,7 +10,7 @@ export function AppCard({ children, style }: { children: ReactNode; style?: Styl
 const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.surface,
-    borderRadius: radius.lg,
+    borderRadius: radius.xl,
     borderCurve: 'continuous',
     borderWidth: 1,
     borderColor: colors.border,

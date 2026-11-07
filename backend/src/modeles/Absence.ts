@@ -1,3 +1,5 @@
+import { Calendrier } from './Calendrier.ts';
+
 export type StatutAbsence = 'a_justifier' | 'envoye' | 'justifiee' | 'refusee';
 
 export class Absence {
@@ -54,9 +56,41 @@ export class Absence {
     );
   }
 
+  static readonly delaiJours = 7;
+
+  static readonly motifs = new Map<string, number>([
+    ['Médical', 15],
+    ['Administratif', 12],
+    ['Transport', 12],
+    ['Familial', 12],
+    ['Autre', 20],
+  ]);
+
+  static echeance(dateSeance: string) {
+    const [annee, mois, jour] = dateSeance.split('-').map(Number);
+    const date = new Date(annee, mois - 1, jour + Absence.delaiJours);
+    const moisTexte = String(date.getMonth() + 1).padStart(2, '0');
+    const jourTexte = String(date.getDate()).padStart(2, '0');
+    return `${date.getFullYear()}-${moisTexte}-${jourTexte}`;
+  }
+
+  static dansLeDelai(dateSeance: string, maintenant: Date) {
+    return Calendrier.decaler(maintenant, 0) <= Absence.echeance(dateSeance);
+  }
+
+  static motifValide(motif: string) {
+    const texte = motif.trim();
+    const separateur = texte.indexOf(' — ');
+    if (separateur < 1) return false;
+    const type = texte.slice(0, separateur);
+    const detail = texte.slice(separateur + 3).trim();
+    const minimum = Absence.motifs.get(type);
+    return minimum !== undefined && detail.length >= minimum;
+  }
+
   deposer(motif: string, maintenant: Date) {
     const texte = motif.trim();
-    if (texte.length < 8 || (this.status !== 'a_justifier' && this.status !== 'refusee')) return null;
+    if (!Absence.motifValide(texte) || (this.status !== 'a_justifier' && this.status !== 'refusee')) return null;
     return new Absence(this.id, this.sessionId, this.studentId, 'envoye', texte, maintenant.toISOString(), null, null);
   }
 

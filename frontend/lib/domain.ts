@@ -43,7 +43,11 @@ export type AttendanceData = {
   absences: Absence[];
 };
 
-const OPEN_STATUSES: AbsenceStatus[] = ['a_justifier', 'envoye'];
+/** Délai calendaire, séance comprise, pour déposer ou renvoyer un justificatif. */
+export const JUSTIFICATION_DAYS = 7;
+
+/** Seuil d’absences non justifiées sur un même cours. */
+export const COURSE_ALERT_THRESHOLD = 3;
 
 export function createSeed(now = new Date()): AttendanceData {
   const groups: Group[] = [
@@ -178,14 +182,42 @@ export function recordCall(data: AttendanceData, sessionId: string, absentStuden
   };
 }
 
+export const justificationKinds = [
+  { id: 'medical', label: 'Médical', hint: 'Consultation, arrêt ou hospitalisation.', min: 15 },
+  { id: 'administratif', label: 'Administratif', hint: 'Convocation ou démarche officielle.', min: 12 },
+  { id: 'transport', label: 'Transport', hint: 'Retard ou annulation justifiée.', min: 12 },
+  { id: 'familial', label: 'Familial', hint: 'Obligation familiale impérieuse.', min: 12 },
+  { id: 'autre', label: 'Autre', hint: 'Le contexte doit être précis.', min: 20 },
+] as const;
+
+export type JustificationKindId = (typeof justificationKinds)[number]['id'];
+
+export function composeJustification(kindId: string, detail: string) {
+  const kind = justificationKinds.find((item) => item.id === kindId);
+  const text = detail.trim().replace(/\s+/g, ' ');
+  if (!kind) return { reason: '', error: 'Choisissez un type de motif.' };
+  if (text.length < kind.min) return { reason: '', error: `Le motif ${kind.label.toLowerCase()} doit contenir au moins ${kind.min} caractères.` };
+  return { reason: `${kind.label} — ${text}`, error: '' };
+}
+
+export function isValidJustificationReason(reason: string) {
+  const text = reason.trim();
+  const separator = text.indexOf(' — ');
+  if (separator < 1) return false;
+  const label = text.slice(0, separator);
+  const detail = text.slice(separator + 3).trim();
+  const kind = justificationKinds.find((item) => item.label === label);
+  return Boolean(kind && detail.length >= kind.min);
+}
+
 export function submitJustification(data: AttendanceData, absenceId: string, reason: string, now = new Date()): AttendanceData {
+  if (!isValidJustificationReason(reason)) return data;
   const motif = reason.trim();
-  if (motif.length < 8) return data;
-  return mapAbsence(data, absenceId, (item) =>
-    item.status === 'a_justifier' || item.status === 'refusee'
-      ? { ...item, status: 'envoye', reason: motif, submittedAt: now.toISOString(), reviewedAt: null, comment: null }
-      : item,
-  );
+  return mapAbsence(data, absenceId, (item) => {
+    const session = sessionById(data, item.sessionId);
+    if (!session || !canJustify(item.status, session.date, now)) return item;
+    return { ...item, status: 'envoye', reason: motif, submittedAt: now.toISOString(), reviewedAt: null, comment: null };
+  });
 }
 
 export function addSession(data: AttendanceData, draft: SessionDraft): { data: AttendanceData; error: string } {
@@ -345,10 +377,7 @@ export function recentAbsenceCount(data: AttendanceData, teacherId: string, now 
 }
 
 export function openAbsenceCount(data: AttendanceData, teacherId: string) {
-  return data.absences.filter((item) => {
-    const session = sessionById(data, item.sessionId);
-    return session?.teacherId === teacherId && OPEN_STATUSES.includes(item.status);
-  }).length;
+  return reviewsForTeacher(data, teacherId).length;
 }
 
 export function reviewsForTeacher(data: AttendanceData, teacherId: string) {
@@ -409,15 +438,39 @@ export function presenceRate(data: AttendanceData, studentId: string) {
   if (!person) return 100;
   const held = data.sessions.filter((item) => item.groupId === person.groupId && item.called);
   if (held.length === 0) return 100;
-  const missed = data.absences.filter((item) => item.studentId === studentId && held.some((session) => session.id === item.sessionId)).length;
+  const missed = data.absences.filter(
+    (item) => item.studentId === studentId && countsAgainstAttendance(item.status) && held.some((session) => session.id === item.sessionId),
+  ).length;
   return Math.round(((held.length - missed) / held.length) * 100);
+}
+
+export function attendanceBalance(data: AttendanceData, studentId: string) {
+  const person = studentById(data, studentId);
+  const held = data.sessions.filter((item) => item.groupId === (person?.groupId ?? '') && item.called);
+  const missed = data.absences.filter(
+    (item) => item.studentId === studentId && countsAgainstAttendance(item.status) && held.some((session) => session.id === item.sessionId),
+  ).length;
+  return { held: held.length, present: Math.max(0, held.length - missed), missed };
+}
+
+export function courseAlerts(data: AttendanceData, studentId: string) {
+  const counts = new Map<string, number>();
+  for (const item of data.absences) {
+    if (item.studentId !== studentId || !countsAgainstAttendance(item.status)) continue;
+    const session = sessionById(data, item.sessionId);
+    if (!session?.called) continue;
+    counts.set(session.course, (counts.get(session.course) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .filter(([, count]) => count >= COURSE_ALERT_THRESHOLD)
+    .map(([course, count]) => ({ course, count }));
 }
 
 export function groupSummaries(data: AttendanceData) {
   return data.groups.map((group) => {
     const people = studentsInGroup(data, group.id);
     const held = data.sessions.filter((item) => item.groupId === group.id && item.called);
-    const missed = data.absences.filter((item) => held.some((session) => session.id === item.sessionId)).length;
+    const missed = data.absences.filter((item) => countsAgainstAttendance(item.status) && held.some((session) => session.id === item.sessionId)).length;
     const possible = people.length * held.length;
     const rate = possible === 0 ? 0 : (missed / possible) * 100;
     return { id: group.id, name: group.name, students: people.length, rate, label: formatRate(rate) };
@@ -427,7 +480,7 @@ export function groupSummaries(data: AttendanceData) {
 export function overallRate(data: AttendanceData) {
   const summaries = groupSummaries(data);
   const people = data.students.length;
-  const missed = data.absences.length;
+  const missed = data.absences.filter((item) => countsAgainstAttendance(item.status)).length;
   const possible = data.groups.reduce((total, group) => {
     const count = studentsInGroup(data, group.id).length;
     const held = data.sessions.filter((item) => item.groupId === group.id && item.called).length;
@@ -462,18 +515,53 @@ export function canViewAbsence(
   return sessionById(data, absence.sessionId)?.teacherId === viewer.teacherId;
 }
 
+export function countsAgainstAttendance(status: AbsenceStatus) {
+  return status !== 'justifiee';
+}
+
+export function justificationDeadline(sessionDate: string) {
+  return addDays(sessionDate, JUSTIFICATION_DAYS);
+}
+
+export function canJustify(status: AbsenceStatus, sessionDate: string, now = new Date()) {
+  return (status === 'a_justifier' || status === 'refusee') && todayIso(now) <= justificationDeadline(sessionDate);
+}
+
 export function statusLabel(status: AbsenceStatus) {
   if (status === 'a_justifier') return 'À justifier';
-  if (status === 'envoye') return 'Envoyé';
+  if (status === 'envoye') return 'En examen';
   if (status === 'justifiee') return 'Justifiée';
   return 'Refusée';
 }
 
+export function absenceLabel(status: AbsenceStatus, sessionDate: string, now = new Date()) {
+  if (status === 'a_justifier' && !canJustify(status, sessionDate, now)) return 'Hors délai';
+  return statusLabel(status);
+}
+
 export function statusText(status: AbsenceStatus) {
-  if (status === 'a_justifier') return 'Cette séance n’a pas encore de justificatif.';
-  if (status === 'envoye') return 'Le justificatif est en cours de validation par l’enseignant.';
-  if (status === 'justifiee') return 'Le justificatif a été accepté.';
-  return 'Le justificatif a été refusé. Vous pouvez en déposer un nouveau.';
+  if (status === 'a_justifier') return 'Vous avez 7 jours après la séance pour déposer un justificatif.';
+  if (status === 'envoye') return 'Le justificatif est en examen. L’absence compte tant qu’elle n’est pas acceptée.';
+  if (status === 'justifiee') return 'Justificatif accepté : cette absence ne baisse pas l’assiduité.';
+  return 'Justificatif refusé. Un nouvel envoi n’est possible que dans les 7 jours.';
+}
+
+export function absenceText(status: AbsenceStatus, sessionDate: string, now = new Date()) {
+  if (status === 'a_justifier' && !canJustify(status, sessionDate, now)) {
+    return 'Le délai de 7 jours est dépassé. Cette absence reste non justifiée.';
+  }
+  if (status === 'refusee' && !canJustify(status, sessionDate, now)) {
+    return 'Justificatif refusé et délai dépassé. Cette absence reste non justifiée.';
+  }
+  return statusText(status);
+}
+
+function addDays(date: string, days: number) {
+  const [year, month, day] = date.split('-').map(Number);
+  const value = new Date(year, (month ?? 1) - 1, (day ?? 1) + days);
+  const mois = String(value.getMonth() + 1).padStart(2, '0');
+  const jour = String(value.getDate()).padStart(2, '0');
+  return `${value.getFullYear()}-${mois}-${jour}`;
 }
 
 export function formatRate(value: number) {

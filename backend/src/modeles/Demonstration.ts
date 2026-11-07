@@ -5,8 +5,6 @@ import { Enseignant } from './Enseignant.ts';
 import { Etudiant } from './Etudiant.ts';
 import { Groupe } from './Groupe.ts';
 import { Registre } from './Registre.ts';
-import { Reservation } from './Reservation.ts';
-import { Salle } from './Salle.ts';
 import { Seance } from './Seance.ts';
 
 const creneauxGi4: { day: number; start: string; end: string; course: string; room: string; teacherId: string }[] = [
@@ -190,33 +188,6 @@ export class Demonstration {
     return seances;
   }
 
-  static salles() {
-    return [
-      new Salle('room-a35', 'Salle A35', 40, 'Projecteur, tableau'),
-      new Salle('room-a21', 'Salle A21', 30, 'Tableau'),
-      new Salle('room-a22', 'Salle A22', 25, 'Tableau'),
-      new Salle('room-a112', 'Salle A-112', 35, 'Ordinateurs, projecteur'),
-      new Salle('room-b204', 'Salle B-204', 32, 'Projecteur'),
-      new Salle('room-c018', 'Salle C-018', 28, 'Tableau'),
-      new Salle('room-f101', 'Salle F-101', 20, 'Tableau'),
-      new Salle('room-d010', 'Salle D-010', 30, 'Ordinateurs'),
-      new Salle('room-e220', 'Salle E-220', 24, 'Projecteur, tableau'),
-    ];
-  }
-
-  static reservationExemple(maintenant = new Date()) {
-    return new Reservation(
-      'res-demo-durand',
-      'room-f101',
-      'teacher-durand',
-      'Projet tutoré',
-      Calendrier.decaler(maintenant, -1),
-      '18:00',
-      '20:00',
-      'en_attente',
-    );
-  }
-
   static lundiPrecedent(maintenant = new Date(), semaines = 1) {
     const date = new Date(maintenant.getFullYear(), maintenant.getMonth(), maintenant.getDate());
     const weekday = date.getDay();
@@ -267,13 +238,6 @@ export class Demonstration {
         ancien,
         'Le document est illisible. Merci d’en déposer un nouveau.',
       ),
-    ];
-  }
-
-  static reservationsNabil(maintenant = new Date()) {
-    return [
-      new Reservation('res-nabil-attente', 'room-a35', 'teacher-elakkad', 'Soutenance des projets', Calendrier.decaler(maintenant, -1), '16:30', '18:00', 'en_attente'),
-      new Reservation('res-nabil-ok', 'room-f101', 'teacher-elakkad', 'Tutorat génie logiciel', Calendrier.decaler(maintenant, -2), '14:30', '16:00', 'validee'),
     ];
   }
 

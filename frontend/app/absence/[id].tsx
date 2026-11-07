@@ -13,7 +13,7 @@ import { Screen } from '@/components/ui/Screen';
 import { colors, spacing } from '@/constants/theme';
 import { useAttendance } from '@/context/attendance';
 import { useSession } from '@/context/session';
-import { absenceById, canViewAbsence, formatWhen, sessionById, statusLabel, statusText, studentById, type AbsenceStatus } from '@/lib/domain';
+import { absenceById, absenceLabel, absenceText, canJustify, canViewAbsence, formatWhen, sessionById, studentById, type AbsenceStatus } from '@/lib/domain';
 
 const tones: Record<AbsenceStatus, 'warning' | 'neutral' | 'success' | 'danger'> = {
   a_justifier: 'warning',
@@ -59,16 +59,16 @@ export default function AbsenceDetailScreen() {
         </AppCard>
       ) : (
         <AppCard style={styles.stack}>
-          <AppBadge label={statusLabel(absence.status)} tone={tones[absence.status]} />
+          <AppBadge label={absenceLabel(absence.status, session.date)} tone={absence.status === 'a_justifier' && !canJustify(absence.status, session.date) ? 'danger' : tones[absence.status]} />
           <Detail label="Étudiant" value={person.name} />
           <Detail label="Groupe" value={session.groupId} />
           <Detail label="Quand" value={formatWhen(session.date, session.start, session.end)} />
           <Detail label="Salle" value={session.room} />
-          <Text style={styles.text}>{statusText(absence.status)}</Text>
+          <Text style={styles.text}>{absenceText(absence.status, session.date)}</Text>
           {absence.reason ? <Detail label="Motif" value={absence.reason} /> : null}
           {absence.comment ? <Detail label="Commentaire" value={absence.comment} /> : null}
           {actionError ? <Text style={styles.error}>{actionError}</Text> : null}
-          {user?.role === 'etudiant' && (absence.status === 'a_justifier' || absence.status === 'refusee') ? (
+          {user?.role === 'etudiant' && canJustify(absence.status, session.date) ? (
             <JustificationForm absenceId={absence.id} again={absence.status === 'refusee'} />
           ) : null}
           {user?.role === 'enseignant' && absence.status === 'envoye' ? (

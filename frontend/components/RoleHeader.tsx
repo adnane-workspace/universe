@@ -3,13 +3,14 @@ import { useSession } from '@/context/session';
 
 export function RoleHeader({ eyebrow, subtitle }: { eyebrow: string; subtitle?: string }) {
   const { user } = useSession();
+  const greeting = eyebrow === 'Bonjour';
 
   return (
     <AppHeader
-      eyebrow={eyebrow}
+      eyebrow=""
       initials={user?.initials ?? ''}
       subtitle={subtitle ?? user?.subtitle ?? ''}
-      title={`Bonjour, ${user?.firstName ?? ''}`}
+      title={greeting ? `Bonjour, ${user?.firstName ?? ''}` : eyebrow}
     />
   );
 }

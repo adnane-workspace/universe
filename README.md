@@ -43,6 +43,7 @@ Les boutons *Accès de développement* sur l’écran de connexion remplissent i
 | `pnpm server` | API backend |
 | `pnpm test` | Tests domaine (`frontend/lib/domain.test.ts`) |
 | `pnpm typecheck` | TypeScript frontend |
+| `pnpm lint` | ESLint (`frontend/`) |
 
 ## Livrables académiques
 

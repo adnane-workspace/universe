@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 
-import { colors, spacing, type } from '@/constants/theme';
+import { spacing, type } from '@/constants/theme';
 
 export function AppEmptyState({ title, message }: { title: string; message: string }) {
   return (

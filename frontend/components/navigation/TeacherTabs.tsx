@@ -26,10 +26,6 @@ export default function TeacherTabs() {
         <NativeTabs.Trigger.Icon sf={{ default: 'person.2', selected: 'person.2.fill' }} md="groups" />
         <NativeTabs.Trigger.Label>Groupe</NativeTabs.Trigger.Label>
       </NativeTabs.Trigger>
-      <NativeTabs.Trigger name="salles" disableTransparentOnScrollEdge>
-        <NativeTabs.Trigger.Icon sf={{ default: 'door.left.hand.closed', selected: 'door.left.hand.open' }} md="meeting_room" />
-        <NativeTabs.Trigger.Label>Salles</NativeTabs.Trigger.Label>
-      </NativeTabs.Trigger>
       <NativeTabs.Trigger name="justificatifs" disableTransparentOnScrollEdge>
         <NativeTabs.Trigger.Icon sf={{ default: 'doc.text', selected: 'doc.text.fill' }} md="description" />
         <NativeTabs.Trigger.Label>Justificatifs</NativeTabs.Trigger.Label>
