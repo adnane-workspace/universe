@@ -2,7 +2,8 @@ import { Link } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { SectionTitle } from '@/components/AppHeader';
-import { JustificationForm } from '@/components/JustificationForm';
+import { DossierButton } from '@/components/DossierButton';
+import { PieceLink } from '@/components/PieceLink';
 import { RoleHeader } from '@/components/RoleHeader';
 import { AppBadge } from '@/components/ui/AppBadge';
 import { AppCard } from '@/components/ui/AppCard';
@@ -12,7 +13,7 @@ import { Screen } from '@/components/ui/Screen';
 import { colors, spacing } from '@/constants/theme';
 import { useAttendance } from '@/context/attendance';
 import { useSession } from '@/context/session';
-import { absenceLabel, absenceText, canJustify, dateParts, formatWhen, studentAbsences, type Absence, type AbsenceStatus, type AttendanceData } from '@/lib/domain';
+import { absenceLabel, absenceText, canJustify, dateParts, studentAbsences, type Absence, type AbsenceStatus, type AttendanceData } from '@/lib/domain';
 
 const tones: Record<AbsenceStatus, 'warning' | 'neutral' | 'success' | 'danger'> = {
   a_justifier: 'warning',
@@ -40,7 +41,7 @@ export default function StudentAbsencesScreen() {
               <View style={styles.cardHeader}>
                 <CourseMark course={course} />
                 <Text style={styles.cardTitle}>{course}</Text>
-                <AppBadge label={absenceCount(items.length)} tone={items.every((item) => item.status === 'justifiee') ? 'success' : 'danger'} />
+                <AppBadge label={courseSummary(items, data).label} tone={courseSummary(items, data).tone} />
               </View>
               {items.map((item) => {
                 const session = data.sessions.find((entry) => entry.id === item.sessionId);
@@ -54,16 +55,18 @@ export default function StudentAbsencesScreen() {
                           <Text style={styles.day}>{parts.day}</Text>
                         </View>
                         <View style={styles.flex}>
-                          <Text style={styles.sessionTitle}>{session ? formatWhen(session.date, session.start, session.end) : 'Séance'}</Text>
+                          <Text style={styles.sessionTitle}>{session ? `${session.start}–${session.end}` : 'Séance'}</Text>
                           <Text style={styles.meta}>{session?.room ?? ''}</Text>
                         </View>
                         <AppBadge label={session ? absenceLabel(item.status, session.date) : 'Absence'} tone={item.status === 'a_justifier' && session && !canJustify(item.status, session.date) ? 'danger' : tones[item.status]} />
+                        <Text accessibilityElementsHidden importantForAccessibility="no" style={styles.chevron}>›</Text>
                       </Pressable>
                     </Link>
                     <Text style={styles.description}>{session ? absenceText(item.status, session.date) : ''}</Text>
                     {item.reason ? <Text selectable style={styles.reason}>{item.reason}</Text> : null}
+                    {item.piece ? <PieceLink absenceId={item.id} name={item.piece} /> : null}
                     {item.status === 'refusee' && item.comment ? <Text selectable style={styles.reason}>Retour de l’enseignant : {item.comment}</Text> : null}
-                    {session && canJustify(item.status, session.date) ? <JustificationForm absenceId={item.id} again={item.status === 'refusee'} /> : null}
+                    {session && canJustify(item.status, session.date) ? <DossierButton absenceId={item.id} again={item.status === 'refusee'} /> : null}
                   </View>
                 );
               })}
@@ -90,6 +93,7 @@ const styles = StyleSheet.create({
   meta: { color: colors.textSecondary, fontSize: 13, marginTop: 2 },
   description: { color: colors.textSecondary, fontSize: 14, lineHeight: 20 },
   reason: { color: colors.text, fontSize: 14, lineHeight: 20 },
+  chevron: { color: colors.textSecondary, fontSize: 22, lineHeight: 22, fontWeight: '600' },
 });
 
 function groupByCourse(absences: Absence[], data: AttendanceData) {
@@ -105,4 +109,15 @@ function groupByCourse(absences: Absence[], data: AttendanceData) {
 
 function absenceCount(count: number) {
   return count > 1 ? `${count} absences` : `${count} absence`;
+}
+
+function courseSummary(items: Absence[], data: AttendanceData) {
+  const open = items.filter((item) => {
+    const session = data.sessions.find((entry) => entry.id === item.sessionId);
+    return session ? canJustify(item.status, session.date) : false;
+  }).length;
+  if (open > 0) return { label: open > 1 ? `${open} à traiter` : '1 à traiter', tone: 'warning' as const };
+  if (items.every((item) => item.status === 'justifiee')) return { label: absenceCount(items.length), tone: 'success' as const };
+  if (items.some((item) => item.status === 'refusee')) return { label: absenceCount(items.length), tone: 'danger' as const };
+  return { label: absenceCount(items.length), tone: 'neutral' as const };
 }

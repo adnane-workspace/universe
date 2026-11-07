@@ -12,6 +12,8 @@ export class Absence {
   readonly reviewedAt: string | null;
 
   readonly comment: string | null;
+  readonly piece: string | null;
+  readonly pieceType: string | null;
 
   constructor(
     id: string,
@@ -22,6 +24,8 @@ export class Absence {
     submittedAt: string | null,
     reviewedAt: string | null,
     comment: string | null = null,
+    piece: string | null = null,
+    pieceType: string | null = null,
   ) {
     this.id = id;
     this.sessionId = sessionId;
@@ -31,6 +35,8 @@ export class Absence {
     this.submittedAt = submittedAt;
     this.reviewedAt = reviewedAt;
     this.comment = comment;
+    this.piece = piece;
+    this.pieceType = pieceType;
   }
 
   static ouverte(id: string, sessionId: string, studentId: string) {
@@ -88,17 +94,39 @@ export class Absence {
     return minimum !== undefined && detail.length >= minimum;
   }
 
-  deposer(motif: string, maintenant: Date) {
+  deposer(motif: string, maintenant: Date, piece: { name: string; type: string } | null = null) {
     const texte = motif.trim();
     if (!Absence.motifValide(texte) || (this.status !== 'a_justifier' && this.status !== 'refusee')) return null;
-    return new Absence(this.id, this.sessionId, this.studentId, 'envoye', texte, maintenant.toISOString(), null, null);
+    return new Absence(
+      this.id,
+      this.sessionId,
+      this.studentId,
+      'envoye',
+      texte,
+      maintenant.toISOString(),
+      null,
+      null,
+      piece?.name ?? this.piece,
+      piece?.type ?? this.pieceType,
+    );
   }
 
   trancher(decision: 'justifiee' | 'refusee', maintenant: Date, commentaire = '') {
     if (this.status !== 'envoye') return null;
     const note = commentaire.trim();
     if (decision === 'refusee' && note.length < 8) return null;
-    return new Absence(this.id, this.sessionId, this.studentId, decision, this.reason, this.submittedAt, maintenant.toISOString(), note || null);
+    return new Absence(
+      this.id,
+      this.sessionId,
+      this.studentId,
+      decision,
+      this.reason,
+      this.submittedAt,
+      maintenant.toISOString(),
+      note || null,
+      this.piece,
+      this.pieceType,
+    );
   }
 
   concerne(studentId: string) {

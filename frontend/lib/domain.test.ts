@@ -11,10 +11,17 @@ import {
   recordCall,
   reviewJustification,
   submitJustification,
+  lessonMark,
   weekDays,
 } from './domain.ts';
 
 const now = new Date(2026, 10, 1, 9, 0, 0);
+
+test('une séance passée non appelée n’est pas à venir', () => {
+  assert.equal(lessonMark(false, undefined, '2026-10-31', now).label, 'Non appelée');
+  assert.equal(lessonMark(false, undefined, '2026-11-01', now).label, 'Aujourd’hui');
+  assert.equal(lessonMark(false, undefined, '2026-11-02', now).label, 'À venir');
+});
 
 test('un mauvais mot de passe est refusé', () => {
   assert.equal(authenticate('p.durand@univ-lumiere.fr', 'mauvais'), null);

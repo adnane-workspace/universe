@@ -4,10 +4,13 @@ import express, { type Request, type Response } from 'express';
 import { Absence } from '../modeles/Absence.ts';
 import { AuthService } from '../services/AuthService.ts';
 import { BaseDeDonnees } from '../services/BaseDeDonnees.ts';
+import { lirePiece, Pieces } from '../services/Pieces.ts';
 
 export class Application {
   private readonly base: BaseDeDonnees;
   private readonly auth: AuthService;
+
+  private readonly pieces = new Pieces();
 
   constructor(base: BaseDeDonnees, auth: AuthService) {
     this.base = base;
@@ -17,7 +20,7 @@ export class Application {
   express() {
     const app = express();
     app.use(cors());
-    app.use(express.json());
+    app.use(express.json({ limit: '4mb' }));
     app.get('/health', (_req, res) => {
       res.json({ ok: true });
     });
@@ -28,6 +31,7 @@ export class Application {
     app.post('/attendance/calls', (req, res) => this.appel(req, res));
     app.post('/attendance/calls/corrections', (req, res) => this.correction(req, res));
     app.post('/attendance/justifications', (req, res) => this.justificatif(req, res));
+    app.get('/attendance/justifications/:id/file', (req, res) => this.fichier(req, res));
     app.post('/attendance/reviews', (req, res) => this.decision(req, res));
     app.post('/attendance/sessions', (req, res) => this.seance(req, res));
     app.post('/attendance/sessions/cancel', (req, res) => this.annulation(req, res));
@@ -95,6 +99,11 @@ export class Application {
     if (!utilisateur) return this.refus(res);
     const absenceId = typeof req.body?.absenceId === 'string' ? req.body.absenceId : '';
     const motif = typeof req.body?.reason === 'string' ? req.body.reason : '';
+    const piece = lirePiece(req.body?.file);
+    if (piece && 'erreur' in piece) {
+      res.status(400).json({ message: piece.erreur });
+      return;
+    }
     const registre = await this.base.lireRegistre();
     const absence = registre.absences.find((item) => item.id === absenceId) ?? null;
     if (!absence || !utilisateur.concerne(absence)) {
@@ -102,7 +111,7 @@ export class Application {
       return;
     }
     const seance = registre.seanceParId(absence.sessionId);
-    const suivant = registre.deposerJustificatif(absenceId, motif);
+    const suivant = registre.deposerJustificatif(absenceId, motif, new Date(), piece ? { name: piece.name, type: piece.type } : null);
     if (suivant === registre) {
       const peutDeposer = absence.status === 'a_justifier' || absence.status === 'refusee';
       const horsDelai = Boolean(seance && peutDeposer && !Absence.dansLeDelai(seance.date, new Date()));
@@ -115,8 +124,31 @@ export class Application {
       });
       return;
     }
+    if (piece && !this.pieces.ecrire(absenceId, piece.bytes)) {
+      res.status(400).json({ message: 'Le fichier joint n’a pas pu être enregistré.' });
+      return;
+    }
     await this.base.ecrireRegistre(suivant);
     res.json({ data: suivant });
+  }
+
+  private async fichier(req: Request, res: Response) {
+    const utilisateur = await this.auth.courant(this.jeton(req));
+    if (!utilisateur) return this.refus(res);
+    const absenceId = typeof req.params.id === 'string' ? req.params.id : '';
+    const registre = await this.base.lireRegistre();
+    const absence = registre.absences.find((item) => item.id === absenceId) ?? null;
+    const seance = absence ? registre.seanceParId(absence.sessionId) : null;
+    const autorise = Boolean(absence && (utilisateur.concerne(absence) || (seance && utilisateur.enseigne(seance)) || utilisateur.admin));
+    const bytes = autorise && absence?.piece ? this.pieces.lire(absence.id) : null;
+    if (!absence?.piece || !absence.pieceType || !bytes) {
+      res.status(404).json({ message: 'Aucun fichier joint.' });
+      return;
+    }
+    const nom = absence.piece.replace(/["\r\n]/g, '');
+    res.setHeader('Content-Type', absence.pieceType);
+    res.setHeader('Content-Disposition', `inline; filename="${nom}"; filename*=UTF-8''${encodeURIComponent(absence.piece)}`);
+    res.send(bytes);
   }
 
   private async decision(req: Request, res: Response) {

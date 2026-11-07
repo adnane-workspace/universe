@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 
 import { attendanceRequest, postAttendance } from '@/lib/api';
 import type { AttendanceData, SessionDraft } from '@/lib/domain';
+import type { PieceJointe } from '@/lib/piece';
 import { useSession } from '@/context/session';
 
 const empty: AttendanceData = { groups: [], students: [], teachers: [], sessions: [], absences: [] };
@@ -13,7 +14,7 @@ type AttendanceValue = {
   reload: () => void;
   saveCall: (sessionId: string, absentStudentIds: string[]) => Promise<string>;
   correctCall: (sessionId: string, absentStudentIds: string[]) => Promise<string>;
-  sendJustification: (absenceId: string, reason: string) => Promise<string>;
+  sendJustification: (absenceId: string, reason: string, file?: PieceJointe | null) => Promise<string>;
   decideJustification: (absenceId: string, decision: 'justifiee' | 'refusee', comment?: string) => Promise<string>;
   createSession: (draft: SessionDraft) => Promise<string>;
   cancelSession: (sessionId: string) => Promise<string>;
@@ -79,7 +80,7 @@ export function AttendanceProvider({ children }: { children: ReactNode }) {
       reload,
       saveCall: (sessionId, absentStudentIds) => mutate('/attendance/calls', { sessionId, absentStudentIds }),
       correctCall: (sessionId, absentStudentIds) => mutate('/attendance/calls/corrections', { sessionId, absentStudentIds }),
-      sendJustification: (absenceId, reason) => mutate('/attendance/justifications', { absenceId, reason }),
+      sendJustification: (absenceId, reason, file) => mutate('/attendance/justifications', { absenceId, reason, ...(file ? { file } : {}) }),
       decideJustification: (absenceId, decision, comment = '') => mutate('/attendance/reviews', { absenceId, decision, comment }),
       createSession: (draft) => mutate('/attendance/sessions', draft),
       cancelSession: (sessionId) => mutate('/attendance/sessions/cancel', { sessionId }),

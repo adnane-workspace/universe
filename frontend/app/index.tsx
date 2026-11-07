@@ -64,7 +64,7 @@ export default function LoginScreen() {
   return (
     <KeyboardAvoidingView style={styles.page} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 28 }]}
+        contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 120 }]}
         keyboardShouldPersistTaps="handled"
       >
         <View style={styles.mark}>
@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
   pressed: { opacity: 0.85 },
   account: { marginTop: spacing.lg, textAlign: 'center', color: colors.textSecondary, fontSize: 14 },
   register: { color: colors.primary, fontWeight: '700' },
-  dev: { marginTop: spacing.lg, gap: spacing.sm },
+  dev: { marginTop: spacing.xxl, gap: spacing.sm },
   devTitle: { color: colors.textSecondary, fontSize: 12, fontWeight: '700', textAlign: 'center', marginBottom: spacing.xs },
   devButton: { borderRadius: radius.md, borderCurve: 'continuous', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2, gap: 2 },
   devRole: { color: colors.text, fontSize: 14, fontWeight: '700' },

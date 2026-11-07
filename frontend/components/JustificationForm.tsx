@@ -6,14 +6,18 @@ import { AppInput } from '@/components/ui/AppInput';
 import { colors, radius, spacing } from '@/constants/theme';
 import { useAttendance } from '@/context/attendance';
 import { composeJustification, justificationKinds, type JustificationKindId } from '@/lib/domain';
+import { choisirPiece, type PieceJointe } from '@/lib/piece';
 
-export function JustificationForm({ absenceId, again = false }: { absenceId: string; again?: boolean }) {
+export function JustificationForm({ absenceId, again = false, onSent }: { absenceId: string; again?: boolean; onSent?: () => void }) {
   const { sendJustification } = useAttendance();
   const [kind, setKind] = useState<JustificationKindId | ''>('');
   const [detail, setDetail] = useState('');
   const [error, setError] = useState('');
   const [pending, setPending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [piece, setPiece] = useState<PieceJointe | null>(null);
   const selected = justificationKinds.find((item) => item.id === kind);
+  const count = detail.trim().length;
 
   async function submit() {
     if (pending) return;
@@ -23,9 +27,34 @@ export function JustificationForm({ absenceId, again = false }: { absenceId: str
       return;
     }
     setPending(true);
-    const result = await sendJustification(absenceId, composed.reason);
+    const result = await sendJustification(absenceId, composed.reason, piece);
     setPending(false);
-    if (result) setError(result);
+    if (result) {
+      setError(result);
+      return;
+    }
+    setSent(true);
+  }
+
+  async function importer() {
+    const resultat = await choisirPiece();
+    if (typeof resultat === 'string') {
+      setError(resultat);
+      return;
+    }
+    if (resultat) {
+      setPiece(resultat);
+      if (error) setError('');
+    }
+  }
+
+  if (sent) {
+    return (
+      <View style={styles.form}>
+        <Text style={styles.done}>Dossier envoyé. L’enseignant va l’examiner.</Text>
+        <AppButton onPress={() => onSent?.()} style={styles.block} title="Fermer" />
+      </View>
+    );
   }
 
   return (
@@ -54,8 +83,13 @@ export function JustificationForm({ absenceId, again = false }: { absenceId: str
           );
         })}
       </View>
-      {selected ? <Text style={styles.hint}>{selected.hint} Minimum {selected.min} caractères.</Text> : null}
+      {selected ? (
+        <Text style={[styles.hint, count >= selected.min && styles.hintOk]}>
+          {selected.hint} {count} / {selected.min} caractères.
+        </Text>
+      ) : null}
       <AppInput
+        editable={Boolean(selected)}
         error={error}
         label="Description"
         maxLength={400}
@@ -64,9 +98,19 @@ export function JustificationForm({ absenceId, again = false }: { absenceId: str
           setDetail(value);
           if (error) setError('');
         }}
-        placeholder={selected ? selected.hint : 'Choisissez d’abord un type'}
+        placeholder={selected ? 'Décrivez le motif' : 'Choisissez d’abord un type'}
         value={detail}
       />
+      <Pressable accessibilityRole="button" onPress={() => void importer()} style={styles.file}>
+        <Text style={styles.fileText}>{piece ? piece.name : 'Importer un fichier'}</Text>
+      </Pressable>
+      {piece ? (
+        <Pressable accessibilityRole="button" onPress={() => setPiece(null)}>
+          <Text style={styles.remove}>Retirer le fichier</Text>
+        </Pressable>
+      ) : (
+        <Text style={styles.hint}>PDF, JPEG ou PNG, 2 Mo maximum.</Text>
+      )}
       <AppButton
         disabled={pending}
         onPress={() => void submit()}
@@ -93,5 +137,21 @@ const styles = StyleSheet.create({
   kindText: { color: colors.text, fontSize: 13, fontWeight: '700' },
   kindTextOn: { color: colors.onPrimary },
   hint: { color: colors.textSecondary, fontSize: 12, lineHeight: 16 },
+  hintOk: { color: colors.success },
+  done: { color: colors.text, fontSize: 15, lineHeight: 22, fontWeight: '600' },
+  file: {
+    minHeight: 48,
+    borderRadius: radius.md,
+    borderCurve: 'continuous',
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  fileText: { color: colors.primary, fontSize: 15, fontWeight: '700', textAlign: 'center' },
+  remove: { color: colors.textSecondary, fontSize: 13, fontWeight: '600', textAlign: 'center' },
   block: { alignSelf: 'stretch' },
 });

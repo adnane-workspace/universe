@@ -57,4 +57,6 @@ export const absences = sqliteTable('absences', {
   submittedAt: text('submitted_at'),
   reviewedAt: text('reviewed_at'),
   comment: text('comment'),
+  piece: text('piece'),
+  pieceType: text('piece_type'),
 });

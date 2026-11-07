@@ -3,7 +3,8 @@ import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { AppHeader } from '@/components/AppHeader';
-import { JustificationForm } from '@/components/JustificationForm';
+import { DossierButton } from '@/components/DossierButton';
+import { PieceLink } from '@/components/PieceLink';
 import { AppBadge } from '@/components/ui/AppBadge';
 import { AppButton } from '@/components/ui/AppButton';
 import { AppCard } from '@/components/ui/AppCard';
@@ -61,15 +62,16 @@ export default function AbsenceDetailScreen() {
         <AppCard style={styles.stack}>
           <AppBadge label={absenceLabel(absence.status, session.date)} tone={absence.status === 'a_justifier' && !canJustify(absence.status, session.date) ? 'danger' : tones[absence.status]} />
           <Detail label="Étudiant" value={person.name} />
-          <Detail label="Groupe" value={session.groupId} />
+          <Detail label="Groupe" value={data.groups.find((item) => item.id === session.groupId)?.name ?? session.groupId} />
           <Detail label="Quand" value={formatWhen(session.date, session.start, session.end)} />
           <Detail label="Salle" value={session.room} />
           <Text style={styles.text}>{absenceText(absence.status, session.date)}</Text>
           {absence.reason ? <Detail label="Motif" value={absence.reason} /> : null}
+          {absence.piece ? <PieceLink absenceId={absence.id} name={absence.piece} /> : null}
           {absence.comment ? <Detail label="Commentaire" value={absence.comment} /> : null}
           {actionError ? <Text style={styles.error}>{actionError}</Text> : null}
           {user?.role === 'etudiant' && canJustify(absence.status, session.date) ? (
-            <JustificationForm absenceId={absence.id} again={absence.status === 'refusee'} />
+            <DossierButton absenceId={absence.id} again={absence.status === 'refusee'} />
           ) : null}
           {user?.role === 'enseignant' && absence.status === 'envoye' ? (
             <View style={styles.actions}>

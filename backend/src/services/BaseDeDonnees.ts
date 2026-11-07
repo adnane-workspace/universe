@@ -68,7 +68,9 @@ CREATE TABLE IF NOT EXISTS absences (
   reason TEXT,
   submitted_at TEXT,
   reviewed_at TEXT,
-  comment TEXT
+  comment TEXT,
+  piece TEXT,
+  piece_type TEXT
 );
 `;
 
@@ -89,6 +91,7 @@ export class BaseDeDonnees {
     await this.client.executeMultiple(SCHEMA);
     await this.assurerColonneMotif();
     await this.assurerColonneCommentaire();
+    await this.assurerColonnePiece();
     await this.semerSiVide();
     await this.completerMotifs();
     await this.assurerSeancesAVenir();
@@ -119,7 +122,7 @@ export class BaseDeDonnees {
       etudiants.map((item) => new Etudiant(item.id, item.name, item.initials, item.groupId)),
       enseignants.map((item) => new Enseignant(item.id, item.name)),
       seances.map((item) => new Seance(item.id, item.course, item.room, item.date, item.start, item.end, item.groupId, item.teacherId, item.called)),
-      absences.map((item) => new Absence(item.id, item.sessionId, item.studentId, item.status as StatutAbsence, item.reason, item.submittedAt, item.reviewedAt, item.comment)),
+      absences.map((item) => new Absence(item.id, item.sessionId, item.studentId, item.status as StatutAbsence, item.reason, item.submittedAt, item.reviewedAt, item.comment, item.piece, item.pieceType)),
     );
   }
 
@@ -166,6 +169,8 @@ export class BaseDeDonnees {
             submittedAt: item.submittedAt,
             reviewedAt: item.reviewedAt,
             comment: item.comment,
+            piece: item.piece,
+            pieceType: item.pieceType,
           })),
         );
       }
@@ -236,6 +241,16 @@ export class BaseDeDonnees {
       await this.client?.execute('ALTER TABLE absences ADD COLUMN comment TEXT');
     } catch {
       // La colonne existe déjà sur une base ouverte avant cette version.
+    }
+  }
+
+  private async assurerColonnePiece() {
+    for (const colonne of ['piece TEXT', 'piece_type TEXT']) {
+      try {
+        await this.client?.execute(`ALTER TABLE absences ADD COLUMN ${colonne}`);
+      } catch {
+        // La colonne existe déjà sur une base ouverte avant cette version.
+      }
     }
   }
 

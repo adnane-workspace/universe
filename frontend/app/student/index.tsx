@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { SectionTitle } from '@/components/AppHeader';
 import { Icon } from '@/components/Icon';
-import { JustificationForm } from '@/components/JustificationForm';
+import { DossierButton } from '@/components/DossierButton';
 import { RoleHeader } from '@/components/RoleHeader';
 import { AppBadge } from '@/components/ui/AppBadge';
 import { AppCard } from '@/components/ui/AppCard';
@@ -13,7 +13,7 @@ import { Screen } from '@/components/ui/Screen';
 import { colors, radius, spacing } from '@/constants/theme';
 import { useAttendance } from '@/context/attendance';
 import { useSession } from '@/context/session';
-import { absenceLabel, attendanceBalance, canJustify, courseAlerts, formatWhen, presenceRate, sessionsForGroupOn, studentAbsences, studentById, todayIso, type AbsenceStatus, type CourseSession } from '@/lib/domain';
+import { absenceLabel, attendanceBalance, canJustify, courseAlerts, formatWhen, lessonMark, presenceRate, sessionsForGroupOn, studentAbsences, studentById, todayIso, type AbsenceStatus, type CourseSession } from '@/lib/domain';
 
 const tones: Record<AbsenceStatus, 'warning' | 'neutral' | 'success' | 'danger'> = {
   a_justifier: 'warning',
@@ -61,11 +61,6 @@ export default function StudentHomeScreen() {
         </View>
       ) : null}
 
-      <View style={styles.shortcuts}>
-        <Shortcut icon={{ ios: 'calendar', android: 'calendar_today' }} label="Emploi du temps" onPress={() => router.push('/student/cours')} />
-        <Shortcut icon={{ ios: 'list.bullet', android: 'list' }} label="Absences" onPress={() => router.push('/student/absences')} />
-      </View>
-
       {waiting.length > 0 ? (
         <View style={styles.block}>
           <SectionTitle>Absences à traiter</SectionTitle>
@@ -81,14 +76,20 @@ export default function StudentHomeScreen() {
                       <Text style={styles.meta}>{session ? formatWhen(session.date, session.start, session.end) : 'Absence confirmée'}</Text>
                     </View>
                     <AppBadge label={session ? absenceLabel(item.status, session.date) : 'Absence'} tone={tones[item.status]} />
+                    <Text accessibilityElementsHidden importantForAccessibility="no" style={styles.chevron}>›</Text>
                   </Pressable>
                 </Link>
-                <JustificationForm absenceId={item.id} again={item.status === 'refusee'} />
+                <DossierButton absenceId={item.id} again={item.status === 'refusee'} />
               </AppCard>
             );
           })}
         </View>
       ) : null}
+
+      <View style={styles.shortcuts}>
+        <Shortcut icon={{ ios: 'calendar', android: 'calendar_today' }} label="Emploi du temps" onPress={() => router.push('/student/cours')} />
+        <Shortcut icon={{ ios: 'list.bullet', android: 'list' }} label="Absences" onPress={() => router.push('/student/absences')} />
+      </View>
 
       <View style={styles.block}>
         <SectionTitle
@@ -105,7 +106,7 @@ export default function StudentHomeScreen() {
         ) : (
           (lessons.length > 0 ? lessons : upcoming).map((lesson) => {
             const missedLesson = absences.find((item) => item.sessionId === lesson.id);
-            const state = lessonState(lesson.called, missedLesson?.status, lesson.date);
+            const state = lessonMark(lesson.called, missedLesson?.status, lesson.date);
             const body = (
               <>
                 <CourseMark course={lesson.course} />
@@ -115,6 +116,7 @@ export default function StudentHomeScreen() {
                   <Text style={styles.meta}>{lesson.room}</Text>
                 </View>
                 <AppBadge label={state.label} tone={state.tone} />
+                {missedLesson ? <Text accessibilityElementsHidden importantForAccessibility="no" style={styles.chevron}>›</Text> : null}
               </>
             );
             if (!missedLesson) {
@@ -162,16 +164,6 @@ function upcomingSessions(sessions: CourseSession[], groupId: string, today: str
     .filter((item) => item.groupId === groupId && item.date >= today)
     .sort((left, right) => left.date.localeCompare(right.date) || left.start.localeCompare(right.start))
     .slice(0, 3);
-}
-
-function lessonState(called: boolean, status: AbsenceStatus | undefined, sessionDate: string) {
-  if (!called) return { label: 'À venir', tone: 'neutral' as const };
-  if (!status) return { label: 'Présent', tone: 'success' as const };
-  if (status === 'justifiee') return { label: 'Justifiée', tone: 'success' as const };
-  if (status === 'refusee') return { label: 'Refusée', tone: 'danger' as const };
-  if (status === 'envoye') return { label: 'En examen', tone: 'neutral' as const };
-  if (!canJustify(status, sessionDate)) return { label: 'Hors délai', tone: 'danger' as const };
-  return { label: 'À justifier', tone: 'warning' as const };
 }
 
 const styles = StyleSheet.create({
@@ -222,4 +214,5 @@ const styles = StyleSheet.create({
   meta: { color: colors.textSecondary, fontSize: 13, marginTop: 2 },
   empty: { color: colors.textSecondary, fontSize: 14, lineHeight: 20 },
   seeAll: { color: colors.primary, fontSize: 14, fontWeight: '700' },
+  chevron: { color: colors.textSecondary, fontSize: 22, lineHeight: 22, fontWeight: '600' },
 });

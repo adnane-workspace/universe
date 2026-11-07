@@ -67,11 +67,11 @@ export class Registre {
     return { registre: this.copie({ absences: [...creees, ...conserves] }), erreur: '' };
   }
 
-  deposerJustificatif(absenceId: string, motif: string, maintenant = new Date()) {
+  deposerJustificatif(absenceId: string, motif: string, maintenant = new Date(), piece: { name: string; type: string } | null = null) {
     const absence = this.absences.find((item) => item.id === absenceId);
     const seance = absence ? this.seanceParId(absence.sessionId) : null;
     if (!absence || !seance || !Absence.dansLeDelai(seance.date, maintenant)) return this;
-    return this.mapperAbsence(absenceId, (item) => item.deposer(motif, maintenant));
+    return this.mapperAbsence(absenceId, (item) => item.deposer(motif, maintenant, piece));
   }
 
   trancherJustificatif(absenceId: string, decision: 'justifiee' | 'refusee', commentaire = '', maintenant = new Date()) {

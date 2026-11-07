@@ -23,6 +23,8 @@ export type Absence = {
   submittedAt: string | null;
   reviewedAt: string | null;
   comment: string | null;
+  piece?: string | null;
+  pieceType?: string | null;
 };
 
 export type SessionDraft = {
@@ -556,6 +558,21 @@ export function absenceText(status: AbsenceStatus, sessionDate: string, now = ne
   return statusText(status);
 }
 
+export function lessonMark(called: boolean, status: AbsenceStatus | undefined, sessionDate: string, now = new Date()) {
+  const today = todayIso(now);
+  if (!called) {
+    if (sessionDate < today) return { label: 'Non appelée', tone: 'warning' as const };
+    if (sessionDate === today) return { label: 'Aujourd’hui', tone: 'neutral' as const };
+    return { label: 'À venir', tone: 'neutral' as const };
+  }
+  if (!status) return { label: 'Présent', tone: 'success' as const };
+  if (status === 'justifiee') return { label: 'Justifiée', tone: 'success' as const };
+  if (status === 'refusee') return { label: 'Refusée', tone: 'danger' as const };
+  if (status === 'envoye') return { label: 'En examen', tone: 'neutral' as const };
+  if (!canJustify(status, sessionDate, now)) return { label: 'Hors délai', tone: 'danger' as const };
+  return { label: 'À justifier', tone: 'warning' as const };
+}
+
 function addDays(date: string, days: number) {
   const [year, month, day] = date.split('-').map(Number);
   const value = new Date(year, (month ?? 1) - 1, (day ?? 1) + days);
@@ -609,6 +626,8 @@ function absence(
     submittedAt: status === 'a_justifier' ? null : reviewedAt,
     reviewedAt: status === 'justifiee' || status === 'refusee' ? reviewedAt : null,
     comment: null,
+    piece: null,
+    pieceType: null,
   };
 }
 

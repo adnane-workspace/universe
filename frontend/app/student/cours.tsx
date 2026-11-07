@@ -1,8 +1,9 @@
+import { Link } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { SectionTitle } from '@/components/AppHeader';
-import { JustificationForm } from '@/components/JustificationForm';
+import { DossierButton } from '@/components/DossierButton';
 import { RoleHeader } from '@/components/RoleHeader';
 import { AppBadge } from '@/components/ui/AppBadge';
 import { AppCard } from '@/components/ui/AppCard';
@@ -11,7 +12,7 @@ import { Screen } from '@/components/ui/Screen';
 import { colors, radius, spacing } from '@/constants/theme';
 import { useAttendance } from '@/context/attendance';
 import { useSession } from '@/context/session';
-import { canJustify, formatWeek, sessionsForGroupOn, studentAbsences, studentById, weekDays, weekdayLabel, type AbsenceStatus } from '@/lib/domain';
+import { canJustify, formatWeek, lessonMark, sessionsForGroupOn, studentAbsences, studentById, todayIso, weekDays, weekdayLabel } from '@/lib/domain';
 
 export default function StudentScheduleScreen() {
   const { user } = useSession();
@@ -22,6 +23,8 @@ export default function StudentScheduleScreen() {
   const [offset, setOffset] = useState(0);
   const today = new Date();
   const days = weekDays(today, offset);
+  const todayKey = todayIso(today);
+  const visible = days.filter((date) => sessionsForGroupOn(data, person?.groupId ?? '', date).length > 0 || date === todayKey);
 
   return (
     <Screen inTabs header={<RoleHeader eyebrow="Emploi du temps" subtitle="Semaine du groupe" />}>
@@ -36,21 +39,23 @@ export default function StudentScheduleScreen() {
           <Text style={styles.stepText}>›</Text>
         </Pressable>
       </View>
-      {days.map((date) => {
-        const lessons = sessionsForGroupOn(data, person?.groupId ?? '', date);
-        const title = capitalize(weekdayLabel(date, today));
-        return (
-          <View key={date} style={styles.day}>
-            <SectionTitle>{title}</SectionTitle>
-            {lessons.length === 0 ? (
-              <Text style={styles.empty}>Aucun cours</Text>
-            ) : (
-              lessons.map((lesson) => {
-                const missed = absences.find((item) => item.sessionId === lesson.id);
-                  const state = lessonState(lesson.called, missed?.status, lesson.date);
-                const open = missed ? canJustify(missed.status, lesson.date) : false;
-                return (
-                  <AppCard key={lesson.id} style={styles.lessonBlock}>
+      {visible.length === 0 ? (
+        <Text style={styles.empty}>Aucun cours cette semaine.</Text>
+      ) : (
+        visible.map((date) => {
+          const lessons = sessionsForGroupOn(data, person?.groupId ?? '', date);
+          const title = capitalize(weekdayLabel(date, today));
+          return (
+            <View key={date} style={styles.day}>
+              <SectionTitle>{title}</SectionTitle>
+              {lessons.length === 0 ? (
+                <Text style={styles.empty}>Aucun cours</Text>
+              ) : (
+                lessons.map((lesson) => {
+                  const missed = absences.find((item) => item.sessionId === lesson.id);
+                  const state = lessonMark(lesson.called, missed?.status, lesson.date);
+                  const open = missed ? canJustify(missed.status, lesson.date) : false;
+                  const row = (
                     <View style={styles.lesson}>
                       <CourseMark course={lesson.course} />
                       <View style={styles.flex}>
@@ -58,27 +63,29 @@ export default function StudentScheduleScreen() {
                         <Text style={styles.meta}>{lesson.start}–{lesson.end} · {lesson.room}</Text>
                       </View>
                       <AppBadge label={state.label} tone={state.tone} />
+                      {missed ? <Text accessibilityElementsHidden importantForAccessibility="no" style={styles.chevron}>›</Text> : null}
                     </View>
-                    {open && missed ? <JustificationForm absenceId={missed.id} again={missed.status === 'refusee'} /> : null}
-                  </AppCard>
-                );
-              })
-            )}
-          </View>
-        );
-      })}
+                  );
+                  return (
+                    <AppCard key={lesson.id} style={styles.lessonBlock}>
+                      {missed ? (
+                        <Link href={{ pathname: '/absence/[id]', params: { id: missed.id } }} asChild>
+                          <Pressable accessibilityHint="Ouvre la fiche de l’absence" accessibilityRole="link">{row}</Pressable>
+                        </Link>
+                      ) : (
+                        row
+                      )}
+                      {open && missed ? <DossierButton absenceId={missed.id} again={missed.status === 'refusee'} /> : null}
+                    </AppCard>
+                  );
+                })
+              )}
+            </View>
+          );
+        })
+      )}
     </Screen>
   );
-}
-
-function lessonState(called: boolean, status: AbsenceStatus | undefined, sessionDate: string) {
-  if (!called) return { label: 'À venir', tone: 'neutral' as const };
-  if (!status) return { label: 'Présent', tone: 'success' as const };
-  if (status === 'justifiee') return { label: 'Justifiée', tone: 'success' as const };
-  if (status === 'refusee') return { label: 'Refusée', tone: 'danger' as const };
-  if (status === 'envoye') return { label: 'En examen', tone: 'neutral' as const };
-  if (!canJustify(status, sessionDate)) return { label: 'Hors délai', tone: 'danger' as const };
-  return { label: 'À justifier', tone: 'warning' as const };
 }
 
 function capitalize(value: string) {
@@ -108,4 +115,5 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   lessonTitle: { color: colors.text, fontSize: 15, fontWeight: '700' },
   meta: { color: colors.textSecondary, fontSize: 13, marginTop: 2 },
+  chevron: { color: colors.textSecondary, fontSize: 22, lineHeight: 22, fontWeight: '600' },
 });

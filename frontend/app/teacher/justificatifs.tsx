@@ -44,6 +44,7 @@ export default function TeacherReviewsScreen() {
                       <Text style={styles.name}>{person?.name}</Text>
                       <Text style={styles.detail}>{session ? `${session.course} · ${formatWhen(session.date, session.start, session.end)}` : 'Séance'}</Text>
                       <Text selectable style={styles.reason}>{item.reason || 'Aucun motif indiqué.'}</Text>
+                      {item.piece ? <Text style={styles.reason}>Fichier : {item.piece}</Text> : null}
                       <Text style={styles.action}>Accepter ou refuser</Text>
                     </View>
                     <View style={styles.side}>
