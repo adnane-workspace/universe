@@ -7,5 +7,5 @@ await base.ouvrir();
 const auth = new AuthService(base);
 const port = Number(process.env.PORT ?? 3001);
 new Application(base, auth).express().listen(port, '0.0.0.0', () => {
-  console.log(`UniPresence API sur http://localhost:${port}`);
+  console.log(`Presencia API sur http://localhost:${port}`);
 });

@@ -85,7 +85,7 @@ function RootLayoutNav() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <StatusBar style="dark" />
-      <Stack screenOptions={{ animation: reduced ? 'fade' : 'default' }}>
+      <Stack screenOptions={{ title: 'Presencia', animation: reduced ? 'fade' : 'default' }}>
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="teacher" options={{ headerShown: false }} />
         <Stack.Screen name="student" options={{ headerShown: false }} />

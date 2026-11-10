@@ -1,13 +1,15 @@
 import { router, usePathname } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Icon } from '@/components/Icon';
 import { AppModal } from '@/components/ui/AppModal';
-import { colors, layout, radius, spacing } from '@/constants/theme';
+import { colors, layout, radius, shadows, spacing } from '@/constants/theme';
 import { useSession } from '@/context/session';
 import { developmentLogins, homeForRole } from '@/lib/auth';
+
+const campusBg = require('@/assets/images/campus-bg.png');
 
 const notices = {
   forgot: {
@@ -16,13 +18,14 @@ const notices = {
   },
   register: {
     title: 'Inscription',
-    message: 'Les comptes UniPresence sont créés par la direction des études. Utilisez l’identifiant qui vous a été remis.',
+    message: 'Les comptes Presencia sont créés par la direction des études. Utilisez l’identifiant qui vous a été remis.',
   },
 } as const;
 
 export default function LoginScreen() {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
+  const { height: viewportHeight } = useWindowDimensions();
   const { user, signIn } = useSession();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
@@ -63,70 +66,75 @@ export default function LoginScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.page} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <Image source={campusBg} blurRadius={16} resizeMode="cover" style={styles.bgImage} />
+      <View pointerEvents="none" style={styles.bgOverlay} />
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: insets.bottom + 120 }]}
+        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 120 }]}
         keyboardShouldPersistTaps="handled"
+        style={styles.scroll}
       >
-        <View style={styles.mark}>
-          <Icon name={{ ios: 'graduationcap.fill', android: 'school' }} color={colors.primary} size={34} />
-        </View>
-        <Text style={styles.brand}>UniPresence</Text>
-        <Text style={styles.title}>Connexion</Text>
+        <View style={[styles.hero, { minHeight: viewportHeight, paddingTop: insets.top + spacing.md, paddingBottom: spacing.xl }]}>
+          <View style={styles.mark}>
+            <Icon name={{ ios: 'graduationcap.fill', android: 'school' }} color={colors.primary} size={34} />
+          </View>
+          <Text style={styles.brand}>Presencia</Text>
+          <Text style={styles.title}>Connexion</Text>
 
-        <Text style={styles.label}>Identifiant</Text>
-        <View style={[styles.field, focused === 'identifier' && styles.fieldOn]}>
-          <Icon name={{ ios: 'envelope', android: 'mail' }} color={colors.textSecondary} size={18} />
-          <TextInput
-            autoCapitalize="none"
-            autoCorrect={false}
-            onBlur={() => setFocused((current) => (current === 'identifier' ? null : current))}
-            onChangeText={setIdentifier}
-            onFocus={() => setFocused('identifier')}
-            onSubmitEditing={() => void enter()}
-            placeholder="identifiant universitaire"
-            placeholderTextColor={colors.textSecondary}
-            style={styles.input}
-            textContentType="username"
-            value={identifier}
-          />
-        </View>
+          <Text style={styles.label}>Identifiant</Text>
+          <View style={[styles.field, focused === 'identifier' && styles.fieldOn]}>
+            <Icon name={{ ios: 'envelope', android: 'mail' }} color={colors.textSecondary} size={18} />
+            <TextInput
+              autoCapitalize="none"
+              autoCorrect={false}
+              onBlur={() => setFocused((current) => (current === 'identifier' ? null : current))}
+              onChangeText={setIdentifier}
+              onFocus={() => setFocused('identifier')}
+              onSubmitEditing={() => void enter()}
+              placeholder="identifiant universitaire"
+              placeholderTextColor={colors.textSecondary}
+              style={styles.input}
+              textContentType="username"
+              value={identifier}
+            />
+          </View>
 
-        <Text style={styles.label}>Mot de passe</Text>
-        <View style={[styles.field, focused === 'password' && styles.fieldOn]}>
-          <Icon name={{ ios: 'lock', android: 'lock' }} color={colors.textSecondary} size={18} />
-          <TextInput
-            autoCapitalize="none"
-            autoCorrect={false}
-            onBlur={() => setFocused((current) => (current === 'password' ? null : current))}
-            onChangeText={setPassword}
-            onFocus={() => setFocused('password')}
-            onSubmitEditing={() => void enter()}
-            placeholder="••••••••"
-            placeholderTextColor={colors.textSecondary}
-            secureTextEntry={hidden}
-            style={styles.input}
-            textContentType="password"
-            value={password}
-          />
-          <Pressable accessibilityRole="button" accessibilityLabel={hidden ? 'Afficher le mot de passe' : 'Masquer le mot de passe'} hitSlop={8} onPress={() => setHidden((current) => !current)}>
-            <Icon name={hidden ? { ios: 'eye', android: 'visibility' } : { ios: 'eye.slash', android: 'visibility_off' }} color={colors.textSecondary} size={18} />
+          <Text style={styles.label}>Mot de passe</Text>
+          <View style={[styles.field, focused === 'password' && styles.fieldOn]}>
+            <Icon name={{ ios: 'lock', android: 'lock' }} color={colors.textSecondary} size={18} />
+            <TextInput
+              autoCapitalize="none"
+              autoCorrect={false}
+              onBlur={() => setFocused((current) => (current === 'password' ? null : current))}
+              onChangeText={setPassword}
+              onFocus={() => setFocused('password')}
+              onSubmitEditing={() => void enter()}
+              placeholder="••••••••"
+              placeholderTextColor={colors.textSecondary}
+              secureTextEntry={hidden}
+              style={styles.input}
+              textContentType="password"
+              value={password}
+            />
+            <Pressable accessibilityRole="button" accessibilityLabel={hidden ? 'Afficher le mot de passe' : 'Masquer le mot de passe'} hitSlop={8} onPress={() => setHidden((current) => !current)}>
+              <Icon name={hidden ? { ios: 'eye', android: 'visibility' } : { ios: 'eye.slash', android: 'visibility_off' }} color={colors.textSecondary} size={18} />
+            </Pressable>
+          </View>
+
+          <Pressable accessibilityRole="link" onPress={() => setNotice('forgot')} style={styles.forgot}>
+            <Text style={styles.forgotText}>Mot de passe oublié ?</Text>
           </Pressable>
+
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+
+          <Pressable accessibilityRole="button" disabled={pending} onPress={() => void enter()} style={({ pressed }) => [styles.login, pressed && styles.pressed, pending && styles.pressed]}>
+            <Text style={styles.loginText}>{pending ? 'Connexion…' : 'Se connecter'}</Text>
+          </Pressable>
+
+          <Text style={styles.account}>
+            Pas encore de compte ?{' '}
+            <Text onPress={() => setNotice('register')} style={styles.register}>Inscription</Text>
+          </Text>
         </View>
-
-        <Pressable accessibilityRole="link" onPress={() => setNotice('forgot')} style={styles.forgot}>
-          <Text style={styles.forgotText}>Mot de passe oublié ?</Text>
-        </Pressable>
-
-        {error ? <Text style={styles.error}>{error}</Text> : null}
-
-        <Pressable accessibilityRole="button" disabled={pending} onPress={() => void enter()} style={({ pressed }) => [styles.login, pressed && styles.pressed, pending && styles.pressed]}>
-          <Text style={styles.loginText}>{pending ? 'Connexion…' : 'Se connecter'}</Text>
-        </Pressable>
-
-        <Text style={styles.account}>
-          Pas encore de compte ?{' '}
-          <Text onPress={() => setNotice('register')} style={styles.register}>Inscription</Text>
-        </Text>
 
         <View style={styles.dev}>
           <Text style={styles.devTitle}>Comptes de démonstration</Text>
@@ -154,6 +162,24 @@ export default function LoginScreen() {
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: colors.background, overflow: 'hidden' },
+  bgImage: {
+    position: 'absolute',
+    top: -24,
+    right: -24,
+    bottom: -24,
+    left: -24,
+    width: '108%',
+    height: '108%',
+  },
+  bgOverlay: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    backgroundColor: 'rgba(255, 255, 255, 0.72)',
+  },
+  scroll: { flex: 1 },
   content: {
     flexGrow: 1,
     width: '100%',
@@ -161,24 +187,27 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     paddingHorizontal: spacing.lg,
   },
+  hero: {
+    justifyContent: 'center',
+  },
   mark: {
     width: 84,
     height: 84,
     borderRadius: 42,
     alignSelf: 'center',
-    marginTop: spacing.lg,
-    backgroundColor: colors.primaryLight,
+    backgroundColor: 'rgba(248, 232, 238, 0.92)',
     alignItems: 'center',
     justifyContent: 'center',
+    ...shadows.card,
   },
   brand: { marginTop: spacing.md, textAlign: 'center', color: colors.primary, fontSize: 28, lineHeight: 34, fontWeight: '800', letterSpacing: -0.4 },
   title: { marginTop: spacing.xs, marginBottom: spacing.xl, textAlign: 'center', color: colors.text, fontSize: 22, lineHeight: 28, fontWeight: '700' },
-  label: { color: colors.text, fontSize: 14, fontWeight: '600', marginBottom: spacing.sm },
+  label: { color: colors.text, fontSize: 14, fontWeight: '700', marginBottom: spacing.sm },
   field: {
     minHeight: 52,
     borderRadius: radius.md,
     borderCurve: 'continuous',
-    backgroundColor: colors.surface,
+    backgroundColor: 'rgba(255, 255, 255, 0.94)',
     borderWidth: 1,
     borderColor: colors.border,
     flexDirection: 'row',
@@ -186,26 +215,38 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     paddingHorizontal: spacing.md,
     marginBottom: spacing.md,
+    ...shadows.card,
   },
   input: { flex: 1, color: colors.text, fontSize: 15, paddingVertical: 14 },
   fieldOn: { borderColor: colors.primary },
   forgot: { alignSelf: 'flex-end', marginTop: -4, marginBottom: spacing.lg },
-  forgotText: { color: colors.primary, fontSize: 14, fontWeight: '600' },
-  error: { color: colors.error, fontSize: 13, lineHeight: 18, marginTop: -8, marginBottom: spacing.md },
+  forgotText: { color: colors.primary, fontSize: 14, fontWeight: '700' },
+  error: { color: colors.error, fontSize: 13, lineHeight: 18, marginTop: -8, marginBottom: spacing.md, fontWeight: '600' },
   login: {
     minHeight: 54,
     borderRadius: radius.full,
     backgroundColor: colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
+    ...shadows.raised,
   },
   loginText: { color: colors.onPrimary, fontSize: 17, fontWeight: '700' },
   pressed: { opacity: 0.85 },
-  account: { marginTop: spacing.lg, textAlign: 'center', color: colors.textSecondary, fontSize: 14 },
+  account: { marginTop: spacing.lg, textAlign: 'center', color: colors.text, fontSize: 14, fontWeight: '600' },
   register: { color: colors.primary, fontWeight: '700' },
-  dev: { marginTop: spacing.xxl, gap: spacing.sm },
-  devTitle: { color: colors.textSecondary, fontSize: 12, fontWeight: '700', textAlign: 'center', marginBottom: spacing.xs },
-  devButton: { borderRadius: radius.md, borderCurve: 'continuous', backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, paddingHorizontal: spacing.md, paddingVertical: spacing.sm + 2, gap: 2 },
+  dev: { paddingTop: spacing.lg, gap: spacing.sm },
+  devTitle: { color: colors.text, fontSize: 12, fontWeight: '700', textAlign: 'center', marginBottom: spacing.xs },
+  devButton: {
+    borderRadius: radius.md,
+    borderCurve: 'continuous',
+    backgroundColor: 'rgba(255, 255, 255, 0.92)',
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
+    gap: 2,
+    ...shadows.card,
+  },
   devRole: { color: colors.text, fontSize: 14, fontWeight: '700' },
   devCredential: { color: colors.textSecondary, fontSize: 12 },
 });

@@ -10,7 +10,7 @@ export function AppLoadingState({ message = 'Ouverture de votre espace' }: { mes
   return (
     <View style={styles.page}>
       <View style={styles.column}>
-        <Text style={styles.brand}>UniPresence</Text>
+        <Text style={styles.brand}>Presencia</Text>
         <Text style={styles.message}>{message}</Text>
         <View style={styles.stack}>
           <Bar reduced={reduced} width="72%" />

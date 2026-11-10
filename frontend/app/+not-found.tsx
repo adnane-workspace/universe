@@ -9,7 +9,7 @@ export default function NotFoundScreen() {
     <>
       <Stack.Screen options={{ title: 'Page introuvable' }} />
       <View style={styles.container}>
-        <AppEmptyState title="Cette page n’existe pas." message="Le lien ouvert ne correspond à aucun écran d’UniPresence." />
+        <AppEmptyState title="Cette page n’existe pas." message="Le lien ouvert ne correspond à aucun écran de Presencia." />
         <Link href="/" style={styles.link}>
           Retour à l’accueil
         </Link>

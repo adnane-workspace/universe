@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Gestion des absences",
-    "slug": "gestion-absences",
+    "name": "Presencia",
+    "slug": "presencia",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "gestionabsences",
+    "scheme": "presencia",
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true
